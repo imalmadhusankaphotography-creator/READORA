@@ -69,6 +69,7 @@
       <Directory Id="CraftSuiteFolder" Name="Imal Madhusanka">
         <Directory Id="INSTALLFOLDER" Name="READORA">
         <Directory Id="ModelsFolder" Name="models" />
+        <Directory Id="TesseractFolder" Name="tesseract" />
       </Directory>
       </Directory>
     </StandardDirectory>
@@ -81,6 +82,9 @@
       <?endif?>
       <ComponentGroupRef Id="ReadoraFiles" />
       <ComponentGroupRef Id="ReadoraModels" />
+      <?ifdef TesseractDir ?>
+      <ComponentGroupRef Id="ReadoraTesseract" />
+      <?endif?>
     </Feature>
   <Property Id="CRAFT_OPTION_1_M" Secure="yes"><RegistrySearch Id="CRAFT_OPTION_1_MSearch" Root="HKLM" Key="Software\Classes\SystemFileAssociations\.pdf\shell\READORA.Edit" Type="raw" />
     </Property><SetProperty Id="EXISTINGPDFCONTEXTMENU" Action="CraftLoadOption1M" Value="[CRAFT_OPTION_1_M]" After="LaunchConditions" Sequence="both" Condition="ALLUSERS = 1" /><Property Id="CRAFT_OPTION_1_U" Secure="yes"><RegistrySearch Id="CRAFT_OPTION_1_USearch" Root="HKCU" Key="Software\Classes\SystemFileAssociations\.pdf\shell\READORA.Edit" Type="raw" />
@@ -230,5 +234,13 @@
     <ComponentGroup Id="ReadoraModels" Directory="ModelsFolder">
       <Files Include="$(var.ModelsDir)\*" />
     </ComponentGroup>
+
+    <!-- The Tesseract OCR engine and its Sinhala, Tamil and English data (get-tesseract.ps1), in
+         tesseract\ beside readora.exe, where the app looks for it (crates/ocr/src/tesseract.rs). -->
+    <?ifdef TesseractDir ?>
+    <ComponentGroup Id="ReadoraTesseract" Directory="TesseractFolder">
+      <Files Include="$(var.TesseractDir)\**" />
+    </ComponentGroup>
+    <?endif?>
   </Fragment>
 </Wix>

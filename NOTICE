@@ -10,6 +10,11 @@ ArtCraft teams. The ArtCraft name, wordmark and logos are trademarks of the ArtC
 PdfCraft's brand terms require of modified versions, READORA does not include them. The READORA
 name and app icon are Imal Madhusanka's.
 
+READORA's Windows packages include the Tesseract OCR engine (https://github.com/tesseract-ocr/tesseract,
+Apache-2.0), built with vcpkg together with the libraries it uses, and its Sinhala, Tamil and English
+language data (tesseract-ocr/tessdata_best, Apache-2.0). Their licences are in the tesseract folder
+of the package (THIRD-PARTY-LICENSES.txt, LICENSE-tessdata.txt).
+
 Third-party material
 
 - edit-session 0.1.0-alpha.2, Copyright (c) 2026 PerchAnton. See vendor/edit-session/LICENSE-MIT and vendor/edit-session/LICENSE-APACHE.

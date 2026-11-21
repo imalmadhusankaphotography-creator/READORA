@@ -245,7 +245,7 @@ if (($secure[0] -split ';') -notcontains 'INSTALLPDFCONTEXTMENU') { throw "INSTA
 $pdfCheckbox = Read-Row 'SELECT `Type`, `Property`, `Text` FROM `Control` WHERE `Dialog_` = ''InstallWelcome'' AND `Control` = ''PdfContextMenu''' 3
 Assert-Equal $pdfCheckbox[0] 'CheckBox' 'Welcome PDF context-menu control'
 Assert-Equal $pdfCheckbox[1] 'INSTALLPDFCONTEXTMENU' 'Welcome PDF context-menu property'
-if ($pdfCheckbox[2] -notmatch '&Edit' -or $pdfCheckbox[2] -notmatch 'Combine files') { throw "Welcome PDF context-menu label: '$($pdfCheckbox[2])'" }
+if ($pdfCheckbox[2] -notmatch '&Open' -or $pdfCheckbox[2] -notmatch 'Combine files') { throw "Welcome PDF context-menu label: '$($pdfCheckbox[2])'" }
 $pdfChecked = Read-Row 'SELECT `Value` FROM `CheckBox` WHERE `Property` = ''INSTALLPDFCONTEXTMENU''' 1
 Assert-Equal $pdfChecked[0] '1' 'Welcome PDF context-menu value'
 Assert-NoRow 'SELECT `Registry` FROM `Registry` WHERE `Key` = ''Software\Classes\.pdf'' AND `Name` IS NULL' '.pdf default app'

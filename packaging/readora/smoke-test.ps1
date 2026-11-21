@@ -94,6 +94,29 @@ try {
   $report.Insert(0, "Result: $(if ($ok) { 'the window came up and answered' } else { 'the window did NOT come up' }) after $elapsed s; process $state")
   $report.Add("State: $(if ($reply) { $reply.Substring(0, [Math]::Min(600, $reply.Length)) } else { '(none)' })")
   $report.Add("Screenshots: $((Get-ChildItem $Shots -Filter *.png | ForEach-Object { "$($_.Name) $([int]($_.Length / 1KB)) KB" }) -join ', ')")
+  # Sinhala OCR with the bundled Tesseract: read a scanned (image-only) Sinhala page.
+  if (Test-Path (Join-Path $exe.DirectoryName 'tesseract\tesseract.exe')) {
+    $scan = Join-Path $Root 'packaging\readora\sample\sinhala-scan.pdf'
+    $script = Join-Path ([IO.Path]::GetTempPath()) 'readora-ocr-script.json'
+    $steps = @(
+      @{ tool = 'ocr_status'; args = @{} },
+      @{ tool = 'doc_open'; args = @{ path = $scan } },
+      @{ tool = 'ocr_recognize'; args = @{ doc = 1; language = 'si' } },
+      @{ tool = 'text_extract'; args = @{ doc = 1 } }
+    )
+    ConvertTo-Json -Depth 6 -InputObject $steps | Set-Content -Encoding utf8 $script
+    $env:PYTHONIOENCODING = 'utf-8'
+    [Console]::OutputEncoding = [Text.Encoding]::UTF8
+    $ocr = (& $cli run --script $script --root $Root 2>&1) -join "`n"
+    $sinhala = [regex]::Matches($ocr, '[\u0D80-\u0DFF]').Count
+    $ocrOk = ($LASTEXITCODE -eq 0) -and $sinhala -ge 40 -and $ocr -match 'READORA'
+    $report.Add("Sinhala OCR: $(if ($ocrOk) { 'read' } else { 'FAILED' }) ($sinhala Sinhala characters)")
+    $tail = $ocr.Substring([Math]::Max(0, $ocr.Length - 1500))
+    $report.Add($tail)
+    if (-not $ocrOk) { $ok = $false }
+  } else {
+    $report.Add('Sinhala OCR: no bundled tesseract in the package')
+  }
   foreach ($log in Get-ChildItem -Path $data -Recurse -Filter '*.log' -ErrorAction SilentlyContinue) {
     $report.Add("==== $($log.Name)")
     foreach ($line in (Get-Content -LiteralPath $log.FullName -Tail 40 -ErrorAction SilentlyContinue)) { $report.Add($line) }

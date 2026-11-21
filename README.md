@@ -42,9 +42,17 @@ The files are not code-signed, so the first time Windows may say it protected yo
 - **Stays smooth.** Native Rust, drawing on the GPU with DirectX 12 (OpenGL as a fallback). Damaged
   files are repaired, and every page renders on its own, so one bad page can't take the app down.
 - **Finds things.** Search as you type, bookmarks, thumbnails, page labels.
+- **Scans.** File ▸ Create PDF from scanner… scans paper pages with your scanner (Windows'
+  own scanner window, any scanner with a Windows driver) straight into a PDF.
+- **Reads scans in Sinhala, Tamil and English.** Recognize text (OCR) turns scanned pages into
+  searchable, copyable text; Sinhala and Tamil are read by the Tesseract engine that comes with
+  READORA.
+- **Exports to Word and Excel.** File ▸ Export to Word… (.docx) and Export to Excel… (.xlsx: the
+  tables on each page become cells, numbers stay numbers), plus PowerPoint, HTML and RTF.
+- **Edits.** Edit text and images, add text, images, links, comments, headers and watermarks.
 - **Organizes pages.** Combine, split, extract, rotate and reorder.
-- **Does the rest.** Comments, forms, digital signatures, password-protected PDFs, layers,
-  attachments, printing and OCR (scanned pages to searchable text, built in).
+- **Does the rest.** Forms, digital signatures, password-protected PDFs, layers, attachments and
+  printing.
 - **Updates itself.** Help ▸ Check for updates finds the newest READORA release here.
 
 ## Build it yourself

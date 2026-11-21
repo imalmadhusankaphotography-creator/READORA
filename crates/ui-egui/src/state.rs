@@ -103,6 +103,8 @@ pub(crate) type GridFile = (String, Result<Vec<u8>, std::path::PathBuf>);
 pub enum Dialog {
     WordCount,
     CreateImages,
+    /// Create ▸ From scanner (READORA): scan pages, then make a PDF of them.
+    Scan,
     Properties(PropsTab),
     About,
     Shortcuts,

@@ -1357,3 +1357,66 @@ fn a_long_bulleted_list_keeps_every_bullet_with_its_item() {
     assert_eq!(paragraphs.len(), 150, "{paragraphs:?}");
     assert!(paragraphs.iter().enumerate().all(|(n, p)| *p == format!("\u{F0B7} item {n};")), "{paragraphs:?}");
 }
+
+#[test]
+fn xlsx_is_an_excel_package_with_a_sheet_per_page() {
+    let x = xlsx(&[table_page(), page()], "Bill");
+    assert!(x.starts_with(b"PK"));
+    let workbook = part(&x, "xl/workbook.xml");
+    assert!(workbook.contains("<sheet name=\"Page 1\" sheetId=\"1\" r:id=\"rIdSheet1\"/>"), "{workbook}");
+    assert!(workbook.contains("<sheet name=\"Page 2\" sheetId=\"2\" r:id=\"rIdSheet2\"/>"), "{workbook}");
+    let types = part(&x, "[Content_Types].xml");
+    assert!(types.contains("/xl/worksheets/sheet2.xml"), "{types}");
+    assert!(part(&x, "xl/_rels/workbook.xml.rels").contains("Target=\"worksheets/sheet1.xml\""));
+    assert!(part(&x, "docProps/core.xml").contains("<dc:title>Bill</dc:title>"));
+    assert!(part(&x, "xl/styles.xml").contains("<cellXfs count=\"12\">"));
+}
+
+#[test]
+fn xlsx_turns_a_detected_table_into_cells_with_numbers() {
+    let sheet = part(&xlsx(&[table_page()], "Bill"), "xl/worksheets/sheet1.xml");
+    // The header row, one text cell per grid column.
+    assert!(sheet.contains("<is><t xml:space=\"preserve\">Meter</t></is>"), "{sheet}");
+    assert!(sheet.contains("<is><t xml:space=\"preserve\">Reading</t></is>"), "{sheet}");
+    // 37414.00 is a number Excel can sum, not text.
+    assert!(sheet.contains("<v>37414</v>"), "{sheet}");
+    assert!(!sheet.contains(">37414.00<"), "{sheet}");
+    // "Totals" spans two grid columns: one merged range on its row.
+    assert!(sheet.contains("<mergeCells count=\"1\"><mergeCell ref=\"A"), "{sheet}");
+    // The paragraph after the table is kept, in column A of its own row.
+    assert!(sheet.contains("Notes follow the table"), "{sheet}");
+    assert_eq!(sheet.matches("<c r=\"A").count(), 5, "4 table rows and 1 paragraph: {sheet}");
+}
+
+#[test]
+fn xlsx_of_no_pages_still_has_a_sheet() {
+    let x = xlsx(&[], "Empty");
+    assert!(part(&x, "xl/workbook.xml").contains("<sheet name=\"Page 1\""));
+    assert!(part(&x, "xl/worksheets/sheet1.xml").contains("<sheetData></sheetData>"));
+}
+
+#[test]
+fn xlsx_reads_only_plain_numbers_as_numbers() {
+    use XlsxValue::{Number, Percent, Text};
+    for (s, want) in [
+        ("42", Number(42.0)),
+        ("-3.5", Number(-3.5)),
+        ("1,250.50", Number(1250.5)),
+        ("(1,000)", Number(-1000.0)),
+        ("0.75", Number(0.75)),
+        ("0", Number(0.0)),
+        ("12.5%", Percent(0.125)),
+    ] {
+        assert_eq!(xlsx_value(s), want, "{s}");
+    }
+    for s in ["0771234567", "12,34", "1,2345", "4111111111111111", "2026-11-21", "Rs. 500", "1e5", "A1", "", "1.", "-(5)", "12.3.4"] {
+        assert_eq!(xlsx_value(s), Text(s.to_string()), "{s}");
+    }
+}
+
+#[test]
+fn xlsx_column_names_follow_excel() {
+    for (i, want) in [(0, "A"), (25, "Z"), (26, "AA"), (51, "AZ"), (52, "BA"), (701, "ZZ"), (702, "AAA")] {
+        assert_eq!(column_name(i), want);
+    }
+}

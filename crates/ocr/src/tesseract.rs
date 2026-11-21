@@ -42,6 +42,9 @@ pub const LANGUAGE_CODES: &[(&str, &str)] = &[
     ("ko", "kor"),
     ("ar", "ara"),
     ("nl", "nld"),
+    // Sinhala and Tamil documents carry English words too (names, numbers, terms): read both.
+    ("si", "sin+eng"),
+    ("ta", "tam+eng"),
 ];
 
 /// English names for [`LANGUAGE_CODES`] (dropdowns show code + name).
@@ -58,6 +61,8 @@ pub const LANGUAGE_NAMES: &[(&str, &str)] = &[
     ("ko", "Korean"),
     ("ar", "Arabic"),
     ("nl", "Dutch"),
+    ("si", "Sinhala"),
+    ("ta", "Tamil"),
 ];
 
 /// Map a settings language code to a Tesseract one: trimmed, case-insensitive, allow-listed;
@@ -85,6 +90,44 @@ fn locate(configured: Option<std::ffi::OsString>, search: impl FnOnce() -> Optio
         Some(value) => Some(PathBuf::from(value)).filter(|program| program_is_executable(program)),
         None => search(),
     }
+}
+
+/// The Tesseract READORA ships: `tesseract\tesseract.exe` beside the running app, with its
+/// language data in `tesseract\tessdata`. Found by the app's own location, never from document
+/// data, and preferred to the PATH: it is known to hold the Sinhala and Tamil data, and a program
+/// planted on the PATH can't stand in for it.
+pub fn bundled_path() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?.join("tesseract");
+    program_file_names().iter().map(|name| dir.join(name)).find(|p| program_is_executable(p))
+}
+
+/// The language data folder beside `program` (`<folder>\tessdata`), when there is one: the
+/// bundled Tesseract is told to use it, whatever TESSDATA_PREFIX an installed copy left behind.
+fn tessdata_beside(program: &Path) -> Option<PathBuf> {
+    let dir = program.parent()?.join("tessdata");
+    dir.is_dir().then_some(dir)
+}
+
+/// Where the usual Windows installer puts Tesseract (`%ProgramFiles%\Tesseract-OCR`), which
+/// doesn't add itself to the PATH.
+fn program_files_path() -> Option<PathBuf> {
+    #[cfg(windows)]
+    {
+        let root = std::env::var_os("ProgramFiles")?;
+        let p = PathBuf::from(root).join("Tesseract-OCR").join("tesseract.exe");
+        program_is_executable(&p).then_some(p)
+    }
+    #[cfg(not(windows))]
+    {
+        None
+    }
+}
+
+/// What [`TesseractCli::find`] looks through when nothing is configured: the bundled copy, the
+/// PATH, then the usual install folder.
+pub fn default_search() -> Option<PathBuf> {
+    bundled_path().or_else(path_search).or_else(program_files_path)
 }
 
 /// The first `tesseract` on the PATH that is an existing executable file. Entries that are not
@@ -252,12 +295,16 @@ pub struct TesseractCli {
     /// Whether `--list-langs` has succeeded yet: 0 untried, 1 yes, 2 no.
     probed: AtomicU8,
     langs: Mutex<Vec<(String, String)>>,
+    /// The `tessdata` folder beside the program (READORA's bundled copy), passed as
+    /// TESSDATA_PREFIX so that copy always reads its own language data.
+    tessdata: Option<PathBuf>,
 }
 
 impl TesseractCli {
     /// The program at `path` (a user preference; never taken from document data).
     pub fn new(program: PathBuf) -> TesseractCli {
-        TesseractCli { program, timeout: TIMEOUT, max_output: MAX_OUTPUT, probed: AtomicU8::new(0), langs: Mutex::new(Vec::new()) }
+        let tessdata = tessdata_beside(&program);
+        TesseractCli { program, timeout: TIMEOUT, max_output: MAX_OUTPUT, probed: AtomicU8::new(0), langs: Mutex::new(Vec::new()), tessdata }
     }
 
     /// The program this engine runs (`ocr_status` names it).
@@ -295,7 +342,7 @@ impl TesseractCli {
     /// A `PDFCRAFT_TESSERACT` that is set but invalid fails closed: it is never replaced by
     /// the PATH search.
     pub fn find() -> Option<TesseractCli> {
-        TesseractCli::at(locate(std::env::var_os("PDFCRAFT_TESSERACT"), path_search)?)
+        TesseractCli::at(locate(std::env::var_os("PDFCRAFT_TESSERACT"), default_search)?)
     }
 
     /// Run `tesseract --list-langs` and parse it; also decides [`TesseractCli::available`].
@@ -368,6 +415,7 @@ impl TesseractCli {
                 }))
                 .env("TMP", &dir.path)
                 .env("TEMP", &dir.path)
+                .envs(self.tessdata.iter().map(|d| ("TESSDATA_PREFIX", d.as_os_str())))
                 .spawn()
                 .map_err(|e| OcrError::NoTesseract(format!("{} could not start: {e}", self.program.display())))?;
         let started = Instant::now();
@@ -689,7 +737,9 @@ mod tests {
         assert_eq!(language_code(""), "eng");
         // The security property: whatever the settings say, only allow-listed codes reach a
         // process.
-        for code in ["en", "de", "fr", "es", "it", "pt", "ru", "zh", "ja", "ko", "ar", "nl", "klingon", "", " eng ", "EN/;rm"] {
+        assert_eq!(language_code("si"), "sin+eng");
+        assert_eq!(language_code("TA"), "tam+eng");
+        for code in ["en", "de", "fr", "es", "it", "pt", "ru", "zh", "ja", "ko", "ar", "nl", "si", "ta", "klingon", "", " eng ", "EN/;rm"] {
             let mapped = language_code(code);
             assert!(LANGUAGE_CODES.iter().any(|(_, v)| *v == mapped), "{code:?} → {mapped:?} is not allow-listed");
         }

@@ -30,7 +30,8 @@ pub mod tesseract;
 pub use confidence::{ConfidenceBand, band_for, is_suspect, low_confidence};
 pub use merge::{MergeStrategy, StrategyOutcome, mean_confidence, recognize_with_strategy, rover_merge};
 pub use ocrs::{
-    ALPHABET, DETECTION_MODEL, DETECTION_MODEL_SHA256, LANGUAGES, Models, Ocr, OcrsRecognizer, RECOGNITION_MODEL, RECOGNITION_MODEL_SHA256,
+    ALPHABET, DETECTION_MODEL, DETECTION_MODEL_SHA256, LANGUAGES, Models, OCRS_LANGUAGES, Ocr, OcrsRecognizer, RECOGNITION_MODEL,
+    RECOGNITION_MODEL_SHA256, ocrs_reads,
 };
 
 pub use pdfcraft_fonts::TextPlan;

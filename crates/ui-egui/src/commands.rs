@@ -258,6 +258,7 @@ impl PdfCraftApp {
             "create.multiple" => self.create_multiple_dialog(),
             "create.multiple_separate" => self.create_multiple_separate_dialog(),
             "create.images" => self.create_from_images_dialog(),
+            "create.scanner" => self.scan_to_pdf_dialog(),
             "create.clipboard" => self.create_from_clipboard(),
             "optimize.reduce" => self.reduce_file_size(),
             "help.shortcuts" => self.dialog = Some(Dialog::Shortcuts),
@@ -619,6 +620,7 @@ impl PdfCraftApp {
                 }
             }
             "export.docx" => self.export_office_dialog(pdfcraft_engine::compare::OfficeFormat::Docx),
+            "export.xlsx" => self.export_office_dialog(pdfcraft_engine::compare::OfficeFormat::Xlsx),
             "export.pptx" => self.export_office_dialog(pdfcraft_engine::compare::OfficeFormat::Pptx),
             "export.html" => self.export_office_dialog(pdfcraft_engine::compare::OfficeFormat::Html),
             "export.rtf" => self.export_office_dialog(pdfcraft_engine::compare::OfficeFormat::Rtf),

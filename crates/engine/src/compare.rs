@@ -153,10 +153,12 @@ impl Session {
     }
 }
 
-/// Export a PDF ▸ Word, PowerPoint, HTML or RTF.
+/// Export a PDF ▸ Word, Excel, PowerPoint, HTML or RTF.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum OfficeFormat {
     Docx,
+    /// Excel: one sheet per page, detected tables as cells and numbers as numbers.
+    Xlsx,
     Pptx,
     Html,
     /// CSS-free HTML that preserves text and inline images but drops colours and layout styling.
@@ -169,6 +171,7 @@ impl OfficeFormat {
     pub fn extension(self) -> &'static str {
         match self {
             OfficeFormat::Docx => "docx",
+            OfficeFormat::Xlsx => "xlsx",
             OfficeFormat::Pptx => "pptx",
             OfficeFormat::Html => "html",
             OfficeFormat::HtmlSimple => "html",
@@ -180,6 +183,7 @@ impl OfficeFormat {
     pub fn from_extension(ext: &str) -> Option<OfficeFormat> {
         match ext.to_ascii_lowercase().as_str() {
             "docx" => Some(OfficeFormat::Docx),
+            "xlsx" => Some(OfficeFormat::Xlsx),
             "pptx" => Some(OfficeFormat::Pptx),
             "html" | "htm" => Some(OfficeFormat::Html),
             "rtf" => Some(OfficeFormat::Rtf),
@@ -329,14 +333,15 @@ impl crate::Document {
     /// [`Self::export_office`], and the pages whose text it had to leave out
     /// ([`OfficeExport::truncated_pages`]).
     pub fn export_office_checked(&self, format: OfficeFormat) -> OfficeExport {
-        // RTF and Markdown leave pictures out.
+        // RTF, Markdown and Excel leave pictures out.
         let (pages, truncated_pages) =
-            self.export_pages_checked(!matches!(format, OfficeFormat::Rtf | OfficeFormat::Markdown), MAX_EXPORT_IMAGE_BYTES);
+            self.export_pages_checked(!matches!(format, OfficeFormat::Rtf | OfficeFormat::Markdown | OfficeFormat::Xlsx), MAX_EXPORT_IMAGE_BYTES);
         let title = self.info.title.clone().unwrap_or_else(|| self.name.trim_end_matches(".pdf").to_string());
         // Word and HTML name the document's language (`/Lang`), so spelling is checked in it.
         let language = self.initial_view().language;
         let bytes = match format {
             OfficeFormat::Docx => pdfcraft_export::docx_with_language(&pages, &title, language.as_deref()),
+            OfficeFormat::Xlsx => pdfcraft_export::xlsx(&pages, &title),
             OfficeFormat::Pptx => pdfcraft_export::pptx(&pages, &title),
             OfficeFormat::Html => pdfcraft_export::html_with_language(&pages, &title, language.as_deref()).into_bytes(),
             OfficeFormat::HtmlSimple => pdfcraft_export::html_simple_with_language(&pages, &title, language.as_deref()).into_bytes(),

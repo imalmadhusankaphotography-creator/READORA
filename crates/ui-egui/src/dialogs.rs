@@ -84,6 +84,7 @@ struct Pending {
     scan_clean_now: bool,
     compare_now: bool,
     images_now: bool,
+    scan_now: bool,
     stamp_now: bool,
     alt_now: bool,
     close: bool,
@@ -179,6 +180,12 @@ fn dialog_body(ui: &mut egui::Ui, app: &mut PdfCraftApp, dialog: Dialog, req: &m
         Dialog::CreateImages => {
             let (go, cancel) = crate::create_ui::image_import_body(ui, app);
             req.images_now = go;
+            req.close = go || cancel;
+            return false;
+        }
+        Dialog::Scan => {
+            let (go, cancel) = crate::scan_ui::body(ui, app);
+            req.scan_now = go;
             req.close = go || cancel;
             return false;
         }
@@ -2237,6 +2244,11 @@ fn finish_close(app: &mut PdfCraftApp, dialog: Dialog, modal_closed: bool, req: 
         app.finish_image_import();
     } else if dialog == Dialog::CreateImages && app.dialog != Some(Dialog::CreateImages) {
         app.image_import = None;
+    }
+    if req.scan_now {
+        app.finish_scan();
+    } else if dialog == Dialog::Scan && app.dialog != Some(Dialog::Scan) {
+        app.scan = None;
     }
     if req.ocr_now {
         app.start_ocr();

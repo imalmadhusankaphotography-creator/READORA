@@ -12,7 +12,11 @@ What it does
   Read: continuous, single page, two-up and full-screen Read mode, light and dark themes, sharp
   text at any zoom, search as you type, bookmarks, thumbnails.
   Organize: combine, split, extract, rotate and reorder pages.
-  Comments, forms, signatures, password-protected PDFs and OCR (scanned pages to searchable text).
+  Comments, forms, signatures, password-protected PDFs.
+  Scan: File > Create PDF from scanner... (Windows' scanner window, any scanner with a driver).
+  OCR: Recognize text makes scanned pages searchable, in English, Sinhala or Tamil (Tesseract,
+  in the tesseract folder, reads Sinhala and Tamil).
+  Export: Word (.docx), Excel (.xlsx: tables become cells), PowerPoint, HTML, RTF.
   Sinhala text shows with the Windows Sinhala font (Nirmala UI / Iskoola Pota).
 
 Your settings

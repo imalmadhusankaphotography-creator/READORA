@@ -115,6 +115,19 @@ if (-not (Test-Path (Join-Path $Models 'ATTRIBUTION.txt')) -or -not (Get-ChildIt
   throw "no OCR models in $Models after cargo xtask models"
 }
 
+# Tesseract and its Sinhala, Tamil and English data (get-tesseract.ps1), in tesseract\ beside
+# readora.exe: Recognize Text reads Sinhala and Tamil with it.
+$WixTesseract = @()
+$Tesseract = Join-Path $Stage 'tesseract'
+if ($env:READORA_TESSERACT_DIR) {
+  if (-not (Test-Path (Join-Path $env:READORA_TESSERACT_DIR 'tesseract.exe'))) { throw "READORA_TESSERACT_DIR=$env:READORA_TESSERACT_DIR has no tesseract.exe" }
+  Copy-Item -Recurse $env:READORA_TESSERACT_DIR $Tesseract
+  $WixTesseract = @('-d', "TesseractDir=$Tesseract")
+  Write-Output "with Tesseract from $env:READORA_TESSERACT_DIR"
+} else {
+  Write-Warning 'READORA_TESSERACT_DIR is not set: no bundled Tesseract (Sinhala and Tamil OCR then need an installed one)'
+}
+
 # ---- font notices (only for builds made with CRAFT_FONTS_DIR; READORA's normally aren't) -------
 $Docs = Join-Path $Stage 'font-licences'
 New-Item -ItemType Directory -Force -Path $Docs | Out-Null
@@ -134,7 +147,7 @@ Invoke-Native 'wix build' {
   wix build (Join-Path $PSScriptRoot 'readora.wxs') -arch $Arch `
     (Join-Path $PSScriptRoot 'installer-ui.wxs') `
     -d "Version=$MsiVersion" -d "BinDir=$Stage" -d "ModelsDir=$Models" -d "IconPath=$(Join-Path $Root 'assets\app-icon\pdfcraft.ico')" `
-    -d "DocsDir=$Docs" -d "HasCraftFontLicences=$HasCraftFontLicences" `
+    -d "DocsDir=$Docs" -d "HasCraftFontLicences=$HasCraftFontLicences" @WixTesseract `
     -o $Msi
 }
 # Inspect the built MSI, not just the XML. In a child process, so its Windows Installer database
@@ -157,6 +170,7 @@ foreach ($f in 'NOTICE', 'LICENSE-document.txt', 'LICENSE-MIT', 'LICENSE-APACHE'
   Copy-Item (Join-Path $Stage $f) $Portable
 }
 Copy-Item -Recurse $Models (Join-Path $Portable 'models')
+if (Test-Path $Tesseract) { Copy-Item -Recurse $Tesseract (Join-Path $Portable 'tesseract') }
 Copy-Item (Join-Path $PSScriptRoot 'README-READORA.txt') (Join-Path $Portable 'README.txt')
 Copy-Item (Join-Path $PSScriptRoot 'Create Desktop Shortcut.bat') $Portable
 if ($HasCraftFontLicences -eq 1) {

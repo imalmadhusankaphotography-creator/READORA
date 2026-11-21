@@ -28,8 +28,19 @@ fn checked_len(width: u32, height: u32) -> Result<usize, OcrError> {
     pixels.checked_mul(4).ok_or(OcrError::ImageTooLarge)
 }
 
-/// The languages the models read (ISO 639-1); all use the Latin alphabet without accents.
-pub const LANGUAGES: &[(&str, &str)] = &[("en", "English")];
+/// The document languages Recognize Text offers (ISO 639-1). The built-in models read only
+/// English ([`OCRS_LANGUAGES`]); Sinhala and Tamil are read by Tesseract, which READORA ships
+/// beside the app with their language data (`recognizers` in the engine picks it for them).
+pub const LANGUAGES: &[(&str, &str)] = &[("en", "English"), ("si", "Sinhala"), ("ta", "Tamil")];
+
+/// The languages the built-in models read: the Latin alphabet without accents.
+pub const OCRS_LANGUAGES: &[&str] = &["en"];
+
+/// Whether the built-in (ocrs) models read `code`; other languages need Tesseract.
+pub fn ocrs_reads(code: &str) -> bool {
+    let c = code.trim();
+    OCRS_LANGUAGES.iter().any(|l| l.eq_ignore_ascii_case(c))
+}
 
 /// The model files, as named in ATTRIBUTION.toml.
 pub const DETECTION_MODEL: &str = "text-detection.onnx";
@@ -242,7 +253,7 @@ impl Recognizer for OcrsRecognizer {
     }
 
     fn languages(&self) -> Vec<(String, String)> {
-        LANGUAGES.iter().map(|(c, n)| ((*c).to_string(), (*n).to_string())).collect()
+        LANGUAGES.iter().filter(|(c, _)| ocrs_reads(c)).map(|(c, n)| ((*c).to_string(), (*n).to_string())).collect()
     }
 
     fn recognize(&self, image: &OcrImage, _options: &RecognizeOptions) -> Result<Vec<Line>, OcrError> {

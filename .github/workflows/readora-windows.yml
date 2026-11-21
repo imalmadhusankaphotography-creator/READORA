@@ -39,8 +39,29 @@ jobs:
       - name: Build
         shell: pwsh
         run: pwsh packaging/readora/ci-run.ps1 -Title Build -Command "pwsh -NoProfile -File packaging\readora\package.ps1 -BuildOnly"
+      # Tesseract (static, from vcpkg) with Sinhala, Tamil and English data, for Sinhala OCR.
+      # Built once and cached: change the key to rebuild it.
+      - name: Restore Tesseract
+        id: tesseract
+        uses: actions/cache/restore@v4
+        with:
+          path: tesseract-bundle
+          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v1
+      - name: Build Tesseract
+        if: steps.tesseract.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: pwsh packaging/readora/ci-run.ps1 -Title Tesseract -Command "pwsh -NoProfile -File packaging\readora\get-tesseract.ps1 -Out tesseract-bundle"
+      # Saved right away, so a later failing step doesn't throw the build away.
+      - name: Save Tesseract
+        if: steps.tesseract.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: tesseract-bundle
+          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v1
       - name: Package
         shell: pwsh
+        env:
+          READORA_TESSERACT_DIR: ${{ github.workspace }}\tesseract-bundle
         run: pwsh packaging/readora/ci-run.ps1 -Title Package -Command "pwsh -NoProfile -File packaging\readora\package.ps1 -SkipBuild"
       - name: Find the packages
         shell: pwsh

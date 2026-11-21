@@ -463,7 +463,7 @@ fn tesseract_version(program: &str) -> Option<String> {
 pub fn tesseract_program_path(configured: Option<&str>) -> Option<String> {
     match configured {
         Some(p) => Some(p.to_string()),
-        None => pdfcraft_ocr::tesseract::path_search().map(|p| p.to_string_lossy().into_owned()),
+        None => pdfcraft_ocr::tesseract::default_search().map(|p| p.to_string_lossy().into_owned()),
     }
 }
 
@@ -541,8 +541,20 @@ pub fn recognizers(settings: &OcrSettings) -> Result<Recognizers, String> {
     // names its engines never starts it: only Tesseract and Automatic read anything from it,
     // so an ocrs-only job pays no process and no wait.
     let configured = configured_tesseract(settings);
-    let tesseract =
-        if matches!(settings.engine, EngineChoice::Tesseract | EngineChoice::Auto) { tesseract_engine(configured.as_deref()) } else { None };
+    // The built-in models read English only: a Sinhala or Tamil job is read by Tesseract,
+    // whichever engine was chosen (READORA ships it beside the app).
+    let needs_tesseract = !pdfcraft_ocr::ocrs_reads(&settings.language);
+    let tesseract = if needs_tesseract || matches!(settings.engine, EngineChoice::Tesseract | EngineChoice::Auto) {
+        tesseract_engine(configured.as_deref())
+    } else {
+        None
+    };
+    if needs_tesseract {
+        return match tesseract {
+            Some(primary) => Ok(Recognizers { primary, secondary: None }),
+            None => Err(format!("{} text is read by the Tesseract engine, and {}", language_name(&settings.language), tesseract_unavailable())),
+        };
+    }
     let mut slot = ENGINES.lock().unwrap_or_else(|e| e.into_inner());
     let cache = slot.get_or_insert_with(|| EngineCache { ocrs: None });
     if cache.ocrs.is_none() {
@@ -559,6 +571,11 @@ pub fn recognizers(settings: &OcrSettings) -> Result<Recognizers, String> {
             (None, None) => Err(models_missing()),
         },
     }
+}
+
+/// The English name of a Recognize Text language code (the code itself when unknown).
+fn language_name(code: &str) -> String {
+    LANGUAGES.iter().find(|(c, _)| c.eq_ignore_ascii_case(code.trim())).map_or_else(|| code.to_string(), |(_, n)| (*n).to_string())
 }
 
 /// Why Tesseract cannot run, named for the user.

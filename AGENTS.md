@@ -1,3 +1,17 @@
+## READORA (read this first)
+
+This repository is **READORA**, Imal Madhusanka's own version of PdfCraft
+(https://github.com/storytold/pdfcraft) under its own name. Everything below this section is
+PdfCraft's contributor guide, kept for its technical rules (never crash, asset licences,
+layering, the control channel). The parts about storytold's process do not apply here: READORA's
+CI is `.github/workflows/readora-windows.yml` (it builds, smoke-tests and publishes on every push
+to `main`), and READORA does not use the ArtCraft brand at all, not even unmodified.
+
+- READORA-specific code and packaging: `packaging/readora/` (start with `UPDATING.md`).
+- Cargo package and crate names stay `pdfcraft*` so upstream releases merge cleanly; user-visible
+  text says READORA (`packaging/readora/rebrand_strings.py`).
+- Changes meant for everyone who uses PdfCraft belong upstream, under the rules below.
+
 <!-- craft-house-rules:start core source=1315c63e17905daf7dbc6dc6f8c49384e415162b sha256=540e6cea75d12d0710c3dca89658328e81e508ecef102446ca5bb95b7c0b92bb -->
 ## House rules
 

@@ -84,7 +84,7 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
             title: "Export to",
             items: &[
                 item("Microsoft Word (.docx)", "file-text", "export.docx", Ready),
-                item("Spreadsheet (.xlsx)", "grid-3x3", "export.xlsx", Planned("M10")),
+                item("Microsoft Excel (.xlsx)", "grid-3x3", "export.xlsx", Ready),
                 item("Presentation (.pptx)", "presentation", "export.pptx", Ready),
                 item("Image (PNG)", "image", "export.image", Ready),
                 item("Export all images", "image", "export.all_images", Ready),
@@ -166,6 +166,7 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
                 item("Multiple files", "files", "create.multiple", Ready),
                 item("Separate PDFs", "files", "create.multiple_separate", Ready),
                 item("Images", "image", "create.images", Ready),
+                item("Scanner", "scan", "create.scanner", Ready),
                 item("Clipboard", "copy-plus", "create.clipboard", Ready),
                 item("Blank page", "file-plus-2", "create.blank", Ready),
             ],
