@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f6f3f1">
+<title>READORA</title>
+<link rel="icon" href="data:,">
+<!--
+  READORA for Android, by Imal Madhusanka: a smooth PDF reader and document scanner.
+  One page, inline CSS and ES5 JavaScript. pdf.js (Apache-2.0, www/lib/pdfjs) draws the pages;
+  the scanner is Google's ML Kit document scanner (@capacitor-mlkit/document-scanner).
+  Icons: Lucide (ISC), the same set the Windows app uses.
+-->
+<style>
+:root {
+  --paper: #f6f3f1;
+  --card: #ffffff;
+  --ink: #1f1a1c;
+  --muted: #6f6669;
+  --faint: #a59ca0;
+  --line: #ebe4e1;
+  --accent: #d31f3f;
+  --accent2: #ff7a45;
+  --accent-soft: #fde9e6;
+  --grad: linear-gradient(135deg, #ff7a45, #c8103c);
+  --top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --radius: 18px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: "Segoe UI", Roboto, "Noto Sans Sinhala", "Iskoola Pota", system-ui, sans-serif; overscroll-behavior: none; }
+body { overflow: hidden; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+svg.i { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ---- Home ---- */
+#home { overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(var(--top) + 18px) 18px calc(var(--bottom) + 28px); display: none; }
+#home.active { display: block; }
+.brand { display: flex; align-items: center; gap: 12px; margin: 4px 2px 22px; }
+.brand svg { width: 46px; height: 46px; border-radius: 13px; box-shadow: 0 6px 18px rgba(200, 16, 60, .25); }
+.brand h1 { margin: 0; font-size: 26px; letter-spacing: .5px; font-weight: 750; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 13.5px; }
+.actions { display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; margin-bottom: 26px; }
+.action { border-radius: var(--radius); padding: 18px 16px; text-align: left; min-height: 132px; display: flex; flex-direction: column; justify-content: space-between; }
+.action svg.i { width: 30px; height: 30px; }
+.action b { display: block; font-size: 17px; font-weight: 700; }
+.action span { display: block; font-size: 12.5px; margin-top: 3px; opacity: .85; }
+.action.scan { background: var(--grad); color: #fff; box-shadow: 0 10px 24px rgba(200, 16, 60, .28); }
+.action.open { background: var(--card); border: 1px solid var(--line); }
+.action.open svg.i { color: var(--accent); }
+.action:active { transform: scale(.98); }
+.section { display: flex; align-items: baseline; justify-content: space-between; margin: 0 2px 10px; }
+.section h2 { font-size: 16px; margin: 0; font-weight: 700; }
+.section small { color: var(--muted); font-size: 12px; }
+#library { display: flex; flex-direction: column; gap: 10px; }
+.doc { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px 10px 10px; }
+.doc .thumb { width: 46px; height: 60px; border-radius: 8px; background: #f1ecea; border: 1px solid var(--line); flex: none; overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--faint); }
+.doc .thumb img { width: 100%; height: 100%; object-fit: cover; }
+.doc .meta { flex: 1; min-width: 0; }
+.doc .name { font-weight: 650; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc .sub { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.doc .more { width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: var(--muted); border-radius: 12px; }
+.empty { text-align: center; color: var(--muted); padding: 34px 20px; border: 1.5px dashed var(--line); border-radius: var(--radius); font-size: 14px; line-height: 1.55; }
+.empty svg.i { width: 34px; height: 34px; color: var(--faint); margin-bottom: 8px; }
+.where { color: var(--faint); font-size: 12px; text-align: center; margin-top: 18px; }
+
+/* ---- Viewer ---- */
+#viewer { background: #e9e4e1; }
+.bar { flex: none; display: flex; align-items: center; gap: 4px; padding: calc(var(--top) + 6px) 6px 6px; background: rgba(246, 243, 241, .96); border-bottom: 1px solid var(--line); z-index: 3; }
+.bar .title { flex: 1; min-width: 0; font-weight: 650; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+.iconbtn { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex: none; }
+.iconbtn:active, .doc .more:active { background: rgba(0, 0, 0, .06); }
+.iconbtn.on { color: var(--accent); background: var(--accent-soft); }
+#searchbar { display: none; align-items: center; gap: 4px; padding: 6px 6px 6px 12px; background: var(--paper); border-bottom: 1px solid var(--line); z-index: 3; }
+#searchbar.open { display: flex; }
+#searchbar input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font: inherit; font-size: 15px; background: #fff; outline: none; }
+#searchbar input:focus { border-color: var(--accent2); }
+#searchcount { color: var(--muted); font-size: 12.5px; min-width: 48px; text-align: center; }
+#scroller { flex: 1; overflow: auto; -webkit-overflow-scrolling: touch; position: relative; touch-action: pan-x pan-y; }
+#pages { position: relative; padding: 12px 0 calc(var(--bottom) + 70px); transform-origin: 0 0; }
+.page { position: relative; margin: 0 auto 12px; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .14); overflow: hidden; }
+.page canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.page .num { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #c9c0bd; font-size: 22px; font-weight: 600; }
+.hl { position: absolute; background: rgba(255, 196, 0, .45); border-radius: 2px; mix-blend-mode: multiply; pointer-events: none; }
+.hl.current { background: rgba(255, 122, 69, .6); }
+body.night #viewer { background: #1b1819; }
+body.night .page { background: #222; box-shadow: none; }
+body.night .page canvas { filter: invert(.92) hue-rotate(180deg); }
+#pagepill { position: absolute; left: 50%; bottom: calc(var(--bottom) + 18px); transform: translateX(-50%); background: rgba(31, 26, 28, .82); color: #fff; font-size: 13px; padding: 7px 14px; border-radius: 20px; z-index: 4; pointer-events: auto; transition: opacity .4s; }
+#pagepill.hide { opacity: 0; }
+#loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; z-index: 5; }
+#loading.on { display: flex; }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(200, 16, 60, .18); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- Sheets, dialogs, toast ---- */
+#shade { position: fixed; inset: 0; background: rgba(20, 14, 16, .42); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 20; }
+#shade.on { opacity: 1; pointer-events: auto; }
+#sheet { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-radius: 22px 22px 0 0; padding: 8px 10px calc(var(--bottom) + 12px); transform: translateY(105%); transition: transform .22s ease; z-index: 21; max-height: 80%; overflow-y: auto; }
+#sheet.on { transform: none; }
+#sheet .grip { width: 38px; height: 4px; border-radius: 4px; background: var(--line); margin: 4px auto 10px; }
+#sheet .head { font-weight: 700; font-size: 15px; padding: 2px 12px 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#sheet .head small { display: block; color: var(--muted); font-weight: 400; font-size: 12.5px; margin-top: 2px; white-space: normal; }
+.item { display: flex; align-items: center; gap: 14px; width: 100%; padding: 13px 12px; border-radius: 12px; font-size: 15px; text-align: left; }
+.item:active { background: #f4efed; }
+.item svg.i { color: var(--muted); }
+.item.danger, .item.danger svg.i { color: #c62828; }
+#dialog { position: fixed; left: 22px; right: 22px; top: 50%; transform: translateY(-50%) scale(.96); background: var(--card); border-radius: 20px; padding: 20px; z-index: 22; opacity: 0; pointer-events: none; transition: opacity .18s, transform .18s; }
+#dialog.on { opacity: 1; pointer-events: auto; transform: translateY(-50%); }
+#dialog h3 { margin: 0 0 8px; font-size: 17px; }
+#dialog p { margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+#dialog input { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 15px; outline: none; margin-bottom: 14px; }
+#dialog input:focus { border-color: var(--accent2); }
+.btns { display: flex; justify-content: flex-end; gap: 8px; }
+.btn { padding: 10px 18px; border-radius: 12px; font-weight: 650; font-size: 14.5px; }
+.btn.primary { background: var(--grad); color: #fff; }
+.btn.plain { color: var(--muted); }
+#toast { position: fixed; left: 50%; bottom: calc(var(--bottom) + 26px); transform: translate(-50%, 20px); background: #2a2326; color: #fff; padding: 11px 16px; border-radius: 14px; font-size: 14px; max-width: 88%; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 30; text-align: center; line-height: 1.4; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#busy { position: fixed; inset: 0; z-index: 25; display: none; align-items: center; justify-content: center; background: rgba(246, 243, 241, .7); flex-direction: column; gap: 12px; color: var(--muted); font-size: 14px; }
+#busy.on { display: flex; }
+</style>
+</head>
+<body>
+
+<section id="home" class="screen active">
+  <div class="brand">
+    <svg viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="bt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a45"/><stop offset="1" stop-color="#c8103c"/></linearGradient><linearGradient id="bi" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2343f"/><stop offset="1" stop-color="#b30d36"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#bt)"/><path d="M156,96 H312 L384,168 V388 Q384,416 356,416 H156 Q128,416 128,388 V124 Q128,96 156,96 Z" fill="#fff8f2"/><path d="M312,96 V146 Q312,168 334,168 H384 Z" fill="#f4c9bd"/><g transform="translate(-14,-6)" fill="none" stroke="url(#bi)"><path d="M216,372 V190 H272 A52,52 0 0 1 272,294 H216" stroke-width="42" stroke-linejoin="round"/><path d="M262,290 L322,370" stroke-width="44"/></g><circle cx="308" cy="364" r="22" fill="#b30d36"/></svg>
+    <div><h1>READORA</h1><p>Scan, read and share PDFs</p></div>
+  </div>
+  <div class="actions">
+    <button class="action scan" id="btnScan"><svg class="i" data-i="camera"></svg><div><b>Scan</b><span>Paper to PDF, with your camera</span></div></button>
+    <button class="action open" id="btnOpen"><svg class="i" data-i="folder-open"></svg><div><b>Open PDF</b><span>From your phone</span></div></button>
+  </div>
+  <div class="section"><h2>My PDFs</h2><small id="libcount"></small></div>
+  <div id="library"></div>
+  <div class="where" id="where"></div>
+</section>
+
+<section id="viewer" class="screen">
+  <div class="bar">
+    <button class="iconbtn" id="btnBack" aria-label="Back"><svg class="i" data-i="chevron-left"></svg></button>
+    <div class="title" id="vtitle"></div>
+    <button class="iconbtn" id="btnSearch" aria-label="Find"><svg class="i" data-i="search"></svg></button>
+    <button class="iconbtn" id="btnNight" aria-label="Night mode"><svg class="i" data-i="moon"></svg></button>
+    <button class="iconbtn" id="btnVMore" aria-label="More"><svg class="i" data-i="ellipsis-vertical"></svg></button>
+  </div>
+  <div id="searchbar">
+    <input id="q" type="search" placeholder="Find in document" enterkeyhint="search" autocomplete="off">
+    <span id="searchcount"></span>
+    <button class="iconbtn" id="btnPrev" aria-label="Previous"><svg class="i" data-i="chevron-up"></svg></button>
+    <button class="iconbtn" id="btnNext" aria-label="Next"><svg class="i" data-i="chevron-down"></svg></button>
+    <button class="iconbtn" id="btnCloseSearch" aria-label="Close"><svg class="i" data-i="x"></svg></button>
+  </div>
+  <div id="scroller"><div id="pages"></div></div>
+  <div id="pagepill" class="hide">1 / 1</div>
+  <div id="loading"><div class="spinner"></div></div>
+</section>
+
+<div id="shade"></div>
+<div id="sheet"></div>
+<div id="dialog"></div>
+<div id="busy"><div class="spinner"></div><div id="busytext"></div></div>
+<div id="toast"></div>
+<input type="file" id="picker" accept="application/pdf,.pdf" hidden>
+
+<script type="module">
+import * as pdfjsLib from './lib/pdfjs/pdf.min.mjs';
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('./lib/pdfjs/pdf.worker.min.mjs', location.href).href;
+window.pdfjsLib = pdfjsLib;
+window.dispatchEvent(new Event('pdfjs-ready'));
+</script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------------------------------------------------------------- platform
+  var Cap = window.Capacitor || null;
+  var NATIVE = !!(Cap && Cap.isNativePlatform && Cap.isNativePlatform());
+  var Plugins = (Cap && Cap.Plugins) || {};
+  var FS = Plugins.Filesystem, ShareP = Plugins.Share, AppP = Plugins.App, Scanner = Plugins.DocumentScanner;
+  var FOLDER = 'READORA';            // Documents/READORA: the library, visible in the phone's file manager
+  var DOCS = 'DOCUMENTS', EXT = 'EXTERNAL_STORAGE', CACHE = 'CACHE';
+
+  var ICONS = {
+    'camera': '<path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/>',
+    'folder-open': '<path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>',
+    'file-text': '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+    'ellipsis-vertical': '<circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>',
+    'share-2': '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" x2="15.42" y1="13.51" y2="17.49"/><line x1="15.41" x2="8.59" y1="6.51" y2="10.49"/>',
+    'file-down': '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
+    'trash-2': '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+    'pencil': '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    'search': '<path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>',
+    'moon': '<path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/>',
+    'chevron-left': '<path d="m15 18-6-6 6-6"/>',
+    'chevron-up': '<path d="m18 15-6-6-6 6"/>',
+    'chevron-down': '<path d="m6 9 6 6 6-6"/>',
+    'x': '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    'image': '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+    'hash': '<line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/>',
+    'check': '<path d="M20 6 9 17l-5-5"/>',
+    'plus': '<path d="M5 12h14"/><path d="M12 5v14"/>'
+  };
+  function icon(name) { return '<svg class="i" viewBox="0 0 24 24">' + (ICONS[name] || '') + '</svg>'; }
+  function fillIcons(root) {
+    var list = (root || document).querySelectorAll('svg[data-i]');
+    for (var k = 0; k < list.length; k++) {
+      list[k].setAttribute('viewBox', '0 0 24 24');
+      list[k].innerHTML = ICONS[list[k].getAttribute('data-i')] || '';
+    }
+  }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function errText(e) { return (e && (e.message || e.errorMessage)) || String(e); }
+
+  // ---------------------------------------------------------------- UI bits
+  var toastTimer = null;
+  function toast(msg, ms) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'on';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.className = ''; }, ms || 2600);
+  }
+  function busy(text) { $('busytext').textContent = text || ''; $('busy').className = text === false ? '' : 'on'; }
+  function idle() { $('busy').className = ''; }
+
+  var overlay = null;   // 'sheet' | 'dialog' | null
+  function closeOverlay() {
+    $('sheet').className = '';
+    $('dialog').className = '';
+    $('shade').className = '';
+    overlay = null;
+  }
+  $('shade').addEventListener('click', function () { if (overlay === 'sheet') closeOverlay(); });
+
+  // A bottom sheet: title, subtitle, and actions [{icon, label, danger, run}].
+  function sheet(title, sub, actions) {
+    var h = '<div class="grip"></div><div class="head">' + esc(title) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>';
+    for (var k = 0; k < actions.length; k++) {
+      h += '<button class="item' + (actions[k].danger ? ' danger' : '') + '" data-k="' + k + '">' + icon(actions[k].icon) + '<span>' + esc(actions[k].label) + '</span></button>';
+    }
+    var s = $('sheet');
+    s.innerHTML = h;
+    var items = s.querySelectorAll('.item');
+    for (var j = 0; j < items.length; j++) {
+      items[j].addEventListener('click', function () {
+        var a = actions[+this.getAttribute('data-k')];
+        closeOverlay();
+        setTimeout(function () { a.run(); }, 180);
+      });
+    }
+    $('shade').className = 'on';
+    s.className = 'on';
+    overlay = 'sheet';
+  }
+
+  // A dialog. opts: {title, text, input (default value), ok, cancel}. Resolves to the input's
+  // value (or true) on OK, null on Cancel.
+  function dialog(opts) {
+    return new Promise(function (resolve) {
+      var d = $('dialog');
+      d.innerHTML = '<h3>' + esc(opts.title) + '</h3>' + (opts.text ? '<p>' + esc(opts.text) + '</p>' : '') +
+        (opts.input !== undefined ? '<input id="dlgin" value="' + esc(opts.input) + '" ' + (opts.type ? 'type="' + opts.type + '" inputmode="numeric"' : '') + '>' : '') +
+        '<div class="btns">' + (opts.cancel === false ? '' : '<button class="btn plain" id="dlgno">' + esc(opts.cancel || 'Cancel') + '</button>') +
+        '<button class="btn primary" id="dlgok">' + esc(opts.ok || 'OK') + '</button></div>';
+      $('shade').className = 'on';
+      d.className = 'on';
+      overlay = 'dialog';
+      var input = $('dlgin');
+      function done(v) { closeOverlay(); dialog.cancel = null; resolve(v); }
+      dialog.cancel = function () { done(null); };
+      $('dlgok').addEventListener('click', function () { done(input ? input.value : true); });
+      if ($('dlgno')) $('dlgno').addEventListener('click', function () { done(null); });
+      if (input) {
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') done(input.value); });
+        setTimeout(function () { input.focus(); input.select(); }, 60);
+      }
+    });
+  }
+
+  function show(screen) {
+    $('home').className = 'screen' + (screen === 'home' ? ' active' : '');
+    $('viewer').className = 'screen' + (screen === 'viewer' ? ' active' : '');
+  }
+
+  // ---------------------------------------------------------------- bytes
+  function b64ToBytes(b64) {
+    var s = atob(b64), n = s.length, out = new Uint8Array(n);
+    for (var k = 0; k < n; k++) out[k] = s.charCodeAt(k);
+    return out;
+  }
+  function bytesToB64(bytes) {
+    var chunk = 0x8000, parts = [];
+    for (var k = 0; k < bytes.length; k += chunk) parts.push(String.fromCharCode.apply(null, bytes.subarray(k, k + chunk)));
+    return btoa(parts.join(''));
+  }
+  // The bytes behind a file:// or content:// address: fetched through Capacitor's local server
+  // (fast, no copying through the bridge), else read through the Filesystem plugin.
+  function readUri(uri) {
+    var url = NATIVE && Cap.convertFileSrc ? Cap.convertFileSrc(uri) : uri;
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.arrayBuffer();
+    }).then(function (buf) { return new Uint8Array(buf); }).catch(function () {
+      if (!FS) throw new Error('This file could not be read');
+      return FS.readFile({ path: uri }).then(function (res) { return b64ToBytes(res.data); });
+    });
+  }
+
+  function safeName(name) {
+    var n = String(name || '').replace(/[\\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!/\.pdf$/i.test(n)) n = n.replace(/\.+$/, '') + '.pdf';
+    return n === '.pdf' ? 'Document.pdf' : n;
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function stamp() {
+    var d = new Date();
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + '.' + pad(d.getMinutes());
+  }
+  function sizeText(b) {
+    if (!b && b !== 0) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return Math.round(b / 1024) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+  function dateText(ms) {
+    if (!ms) return '';
+    var d = new Date(ms), now = new Date();
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var day = d.getDate() + ' ' + months[d.getMonth()] + (d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : '');
+    return day + ', ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  // ---------------------------------------------------------------- library (Documents/READORA)
+  // In a browser (testing), the library lives in memory.
+  var memLib = {};
+  var Library = {
+    ready: function () {
+      if (!NATIVE) return Promise.resolve();
+      var perm = FS.checkPermissions ? FS.checkPermissions().then(function (p) {
+        return p.publicStorage === 'granted' ? null : FS.requestPermissions();
+      }).catch(function () { return null; }) : Promise.resolve();
+      return perm.then(function () {
+        return FS.mkdir({ path: FOLDER, directory: DOCS, recursive: true }).catch(function () { return null; });
+      });
+    },
+    list: function () {
+      if (!NATIVE) {
+        return Promise.resolve(Object.keys(memLib).map(function (n) { return { name: n, size: memLib[n].bytes.length, mtime: memLib[n].mtime }; }));
+      }
+      return FS.readdir({ path: FOLDER, directory: DOCS }).then(function (r) {
+        return (r.files || []).filter(function (f) { return f.type !== 'directory' && /\.pdf$/i.test(f.name); });
+      }).catch(function () { return []; });
+    },
+    uniqueName: function (name) {
+      return Library.list().then(function (files) {
+        var taken = {};
+        files.forEach(function (f) { taken[f.name.toLowerCase()] = true; });
+        var base = name.replace(/\.pdf$/i, ''), n = base + '.pdf', k = 2;
+        while (taken[n.toLowerCase()]) { n = base + ' (' + k + ').pdf'; k++; }
+        return n;
+      });
+    },
+    read: function (name) {
+      if (!NATIVE) return Promise.resolve(memLib[name].bytes);
+      return FS.getUri({ path: FOLDER + '/' + name, directory: DOCS }).then(function (r) { return readUri(r.uri); });
+    },
+    uri: function (name) {
+      return FS.getUri({ path: FOLDER + '/' + name, directory: DOCS }).then(function (r) { return r.uri; });
+    },
+    // Save bytes under `name` (made unique); resolves to the name used.
+    saveBytes: function (name, bytes) {
+      return Library.uniqueName(safeName(name)).then(function (n) {
+        if (!NATIVE) { memLib[n] = { bytes: bytes, mtime: Date.now() }; return n; }
+        return FS.writeFile({ path: FOLDER + '/' + n, directory: DOCS, data: bytesToB64(bytes), recursive: true }).then(function () { return n; });
+      });
+    },
+    // Copy a file:// or content:// file into the library.
+    saveUri: function (name, uri) {
+      return Library.uniqueName(safeName(name)).then(function (n) {
+        return FS.copy({ from: uri, to: FOLDER + '/' + n, toDirectory: DOCS }).then(function () { return n; }, function () {
+          return readUri(uri).then(function (bytes) { return Library.saveBytes(n, bytes); });
+        });
+      });
+    },
+    rename: function (from, to) {
+      return Library.uniqueName(safeName(to)).then(function (n) {
+        if (!NATIVE) { memLib[n] = memLib[from]; delete memLib[from]; return n; }
+        return FS.rename({ from: FOLDER + '/' + from, to: FOLDER + '/' + n, directory: DOCS, toDirectory: DOCS }).then(function () { return n; });
+      });
+    },
+    remove: function (name) {
+      if (!NATIVE) { delete memLib[name]; return Promise.resolve(); }
+      return FS.deleteFile({ path: FOLDER + '/' + name, directory: DOCS });
+    }
+  };
+
+  var thumbs = {};   // name|mtime -> data URL
+  var thumbQueue = [], thumbBusy = false;
+  function queueThumb(file, el) {
+    var key = file.name + '|' + (file.mtime || 0);
+    if (thumbs[key]) { el.innerHTML = '<img src="' + thumbs[key] + '" alt="">'; return; }
+    thumbQueue.push({ key: key, file: file, el: el });
+    runThumbs();
+  }
+  function runThumbs() {
+    if (thumbBusy || !thumbQueue.length || !window.pdfjsLib) return;
+    thumbBusy = true;
+    var job = thumbQueue.shift();
+    var pdfDoc = null;
+    Library.read(job.file.name).then(function (bytes) {
+      return openPdf(bytes);
+    }).then(function (pdf) {
+      pdfDoc = pdf;
+      return pdf.getPage(1);
+    }).then(function (page) {
+      var vp = page.getViewport({ scale: 1 });
+      var scale = 120 / vp.width;
+      var v = page.getViewport({ scale: scale });
+      var c = document.createElement('canvas');
+      c.width = Math.ceil(v.width); c.height = Math.ceil(v.height);
+      var ctx = c.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+      return page.render({ canvasContext: ctx, viewport: v }).promise.then(function () {
+        thumbs[job.key] = c.toDataURL('image/jpeg', 0.7);
+        if (job.el.isConnected) job.el.innerHTML = '<img src="' + thumbs[job.key] + '" alt="">';
+      });
+    }).catch(function () { /* a broken file keeps its icon */ }).then(function () {
+      destroyPdf(pdfDoc);
+      thumbBusy = false;
+      runThumbs();
+    });
+  }
+
+  function renderLibrary() {
+    return Library.list().then(function (files) {
+      files.sort(function (a, b) { return (b.mtime || 0) - (a.mtime || 0); });
+      var box = $('library');
+      $('libcount').textContent = files.length ? files.length + (files.length === 1 ? ' file' : ' files') : '';
+      if (!files.length) {
+        box.innerHTML = '<div class="empty">' + icon('file-text') + '<br>Your scans and saved PDFs appear here.<br>Tap <b>Scan</b> to make your first PDF.</div>';
+      } else {
+        box.innerHTML = '';
+        files.forEach(function (f) {
+          var row = document.createElement('div');
+          row.className = 'doc';
+          row.innerHTML = '<div class="thumb">' + icon('file-text') + '</div><div class="meta"><div class="name">' + esc(f.name.replace(/\.pdf$/i, '')) +
+            '</div><div class="sub">' + esc([sizeText(f.size), dateText(f.mtime)].filter(Boolean).join(' · ')) + '</div></div>' +
+            '<button class="more" aria-label="More">' + icon('ellipsis-vertical') + '</button>';
+          row.addEventListener('click', function (e) {
+            if (e.target.closest('.more')) { fileMenu(f.name); return; }
+            openLibraryFile(f.name);
+          });
+          box.appendChild(row);
+          queueThumb(f, row.querySelector('.thumb'));
+        });
+      }
+      $('where').textContent = NATIVE ? 'Saved in your phone’s Documents › READORA folder' : 'Browser preview: files stay until you close this page';
+    });
+  }
+
+  function fileMenu(name) {
+    sheet(name.replace(/\.pdf$/i, ''), 'Documents › READORA', [
+      { icon: 'file-text', label: 'Open', run: function () { openLibraryFile(name); } },
+      { icon: 'share-2', label: 'Share PDF', run: function () { shareLibraryFile(name); } },
+      { icon: 'file-down', label: 'Save a copy to Downloads', run: function () { libraryToDownloads(name); } },
+      { icon: 'image', label: 'Save pages as JPG images', run: function () { Library.read(name).then(function (b) { exportJpegs(b, name); }); } },
+      { icon: 'pencil', label: 'Rename', run: function () { renameFile(name); } },
+      { icon: 'trash-2', label: 'Delete', danger: true, run: function () { deleteFile(name); } }
+    ]);
+  }
+
+  function renameFile(name) {
+    dialog({ title: 'Rename', input: name.replace(/\.pdf$/i, ''), ok: 'Rename' }).then(function (v) {
+      if (v === null || !v.trim()) return;
+      Library.rename(name, v).then(function (n) {
+        if (current && current.libName === name) { current.libName = n; current.name = n; $('vtitle').textContent = n.replace(/\.pdf$/i, ''); }
+        renderLibrary();
+        toast('Renamed');
+      }, function (e) { toast('Couldn’t rename: ' + errText(e)); });
+    });
+  }
+
+  function deleteFile(name) {
+    dialog({ title: 'Delete this PDF?', text: name + ' will be deleted from Documents › READORA.', ok: 'Delete' }).then(function (ok) {
+      if (!ok) return;
+      Library.remove(name).then(function () {
+        if (current && current.libName === name) closeViewer();
+        renderLibrary();
+        toast('Deleted');
+      }, function (e) { toast('Couldn’t delete: ' + errText(e)); });
+    });
+  }
+
+  // ---------------------------------------------------------------- export
+  function shareLibraryFile(name) {
+    if (!NATIVE || !ShareP) { toast('Sharing works in the app'); return; }
+    Library.uri(name).then(function (uri) {
+      return ShareP.share({ title: name, files: [uri], dialogTitle: 'Share PDF' });
+    }).catch(function (e) { if (!/cancel/i.test(errText(e))) toast('Couldn’t share: ' + errText(e)); });
+  }
+  // Share bytes that aren't in the library (an opened file): through a temporary copy.
+  function shareBytes(name, bytes) {
+    if (!NATIVE || !ShareP) { toast('Sharing works in the app'); return; }
+    var path = 'share/' + safeName(name);
+    FS.writeFile({ path: path, directory: CACHE, data: bytesToB64(bytes), recursive: true }).then(function (r) {
+      return ShareP.share({ title: name, files: [r.uri], dialogTitle: 'Share PDF' });
+    }).catch(function (e) { if (!/cancel/i.test(errText(e))) toast('Couldn’t share: ' + errText(e)); });
+  }
+  function downloadsName(name) {
+    // Download/<name>, not overwriting a file that is already there.
+    var base = safeName(name).replace(/\.pdf$/i, '');
+    function attempt(k) {
+      var n = base + (k > 1 ? ' (' + k + ')' : '') + '.pdf';
+      return FS.stat({ path: 'Download/' + n, directory: EXT }).then(function () { return k < 50 ? attempt(k + 1) : n; }, function () { return n; });
+    }
+    return attempt(1);
+  }
+  function libraryToDownloads(name) {
+    if (!NATIVE) { Library.read(name).then(function (b) { browserDownload(name, b); }); return; }
+    downloadsName(name).then(function (n) {
+      return Library.uri(name).then(function (uri) {
+        return FS.copy({ from: uri, to: 'Download/' + n, toDirectory: EXT });
+      }).then(function () { toast('Saved to Downloads › ' + n, 3200); });
+    }).catch(function () {
+      toast('Downloads isn’t writable here: use Share › Save to Files', 3600);
+      shareLibraryFile(name);
+    });
+  }
+  function bytesToDownloads(name, bytes) {
+    if (!NATIVE) { browserDownload(name, bytes); return; }
+    downloadsName(name).then(function (n) {
+      return FS.writeFile({ path: 'Download/' + n, directory: EXT, data: bytesToB64(bytes), recursive: true }).then(function () {
+        toast('Saved to Downloads › ' + n, 3200);
+      });
+    }).catch(function () { shareBytes(name, bytes); });
+  }
+  function browserDownload(name, bytes) {
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    a.download = safeName(name);
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+
+  // Every page as a JPEG in Pictures/READORA/<name>/ (2× the page size, about 150 dpi for A4).
+  function exportJpegs(bytes, name) {
+    var stem = safeName(name).replace(/\.pdf$/i, '');
+    var folder = 'Pictures/READORA/' + stem;
+    var pdf = null, saved = 0;
+    busy('Saving pages as JPG…');
+    openPdf(bytes).then(function (doc) {
+      pdf = doc;
+      var chain = Promise.resolve();
+      for (var n = 1; n <= doc.numPages; n++) {
+        (function (num) {
+          chain = chain.then(function () {
+            $('busytext').textContent = 'Saving page ' + num + ' of ' + doc.numPages + '…';
+            return doc.getPage(num).then(function (page) {
+              var v1 = page.getViewport({ scale: 1 });
+              var scale = Math.min(2.2, 2400 / Math.max(v1.width, v1.height));
+              var v = page.getViewport({ scale: scale });
+              var c = document.createElement('canvas');
+              c.width = Math.ceil(v.width); c.height = Math.ceil(v.height);
+              var ctx = c.getContext('2d');
+              ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+              return page.render({ canvasContext: ctx, viewport: v }).promise.then(function () {
+                var data = c.toDataURL('image/jpeg', 0.9).split(',')[1];
+                c.width = c.height = 0;
+                var file = stem + ' - page ' + num + '.jpg';
+                if (!NATIVE) { saved++; return null; }
+                return FS.writeFile({ path: folder + '/' + file, directory: EXT, data: data, recursive: true }).then(function () { saved++; });
+              });
+            });
+          });
+        })(n);
+      }
+      return chain;
+    }).then(function () {
+      idle();
+      toast(saved + (saved === 1 ? ' page' : ' pages') + ' saved in Pictures › READORA › ' + stem, 3600);
+    }).catch(function (e) {
+      idle();
+      toast('Couldn’t save the pages: ' + errText(e), 3600);
+    }).then(function () { destroyPdf(pdf); });
+  }
+
+  // ---------------------------------------------------------------- scanner
+  function scan() {
+    if (!NATIVE || !Scanner) {
+      toast('The scanner works in the READORA app on your phone');
+      return;
+    }
+    var check = Scanner.isGoogleDocumentScannerModuleAvailable ? Scanner.isGoogleDocumentScannerModuleAvailable().catch(function () { return { available: true }; }) : Promise.resolve({ available: true });
+    check.then(function (r) {
+      if (r.available) return startScan();
+      // The scanner itself comes from Google Play services, downloaded once.
+      busy('Getting the scanner from Google Play services…');
+      var handle = null;
+      return new Promise(function (resolve, reject) {
+        Scanner.addListener('googleDocumentScannerModuleInstallProgress', function (ev) {
+          if (ev.progress !== undefined) $('busytext').textContent = 'Getting the scanner… ' + Math.round(ev.progress) + '%';
+          if (ev.state === 4) resolve();                                   // COMPLETED
+          if (ev.state === 3 || ev.state === 5) reject(new Error('the download failed'));   // CANCELED, FAILED
+        }).then(function (h) { handle = h; });
+        Scanner.installGoogleDocumentScannerModule().catch(reject);
+        setTimeout(resolve, 90000);
+      }).then(function () {
+        idle();
+        if (handle) handle.remove();
+        return startScan();
+      }, function (e) {
+        idle();
+        if (handle) handle.remove();
+        toast('The scanner couldn’t be installed: ' + errText(e) + '. Check the internet and Google Play services.', 4200);
+      });
+    });
+  }
+
+  function startScan() {
+    return Scanner.scanDocument({
+      scannerMode: 'FULL',            // auto edges, crop, filters, stain and finger removal
+      resultFormats: 'JPEG_PDF',
+      galleryImportAllowed: true,     // photos already taken can be added too
+      pageLimit: 100
+    }).then(scanned, function (e) {
+      var m = errText(e);
+      if (/cancel/i.test(m)) return;
+      toast('The scan stopped: ' + m, 3600);
+    });
+  }
+
+  // The scanner returns a PDF and the page images; save the PDF in the library.
+  function scanned(result) {
+    if (!result || !result.pdf || !result.pdf.uri) { toast('The scanner returned no PDF'); return; }
+    var pages = result.pdf.pageCount || (result.scannedImages || []).length;
+    dialog({ title: 'Name your scan', text: pages + (pages === 1 ? ' page' : ' pages') + ' scanned', input: 'Scan ' + stamp(), ok: 'Save', cancel: false }).then(function (v) {
+      var name = safeName((v && v.trim()) || ('Scan ' + stamp()));
+      busy('Saving…');
+      Library.saveUri(name, result.pdf.uri).then(function (n) {
+        idle();
+        renderLibrary();
+        afterScan(n, result.scannedImages || []);
+      }, function (e) {
+        idle();
+        toast('Couldn’t save the scan: ' + errText(e), 4000);
+      });
+    });
+  }
+
+  function afterScan(name, images) {
+    sheet('Saved ✓ ' + name.replace(/\.pdf$/i, ''), 'In Documents › READORA. What next?', [
+      { icon: 'file-text', label: 'Open the PDF', run: function () { openLibraryFile(name); } },
+      { icon: 'share-2', label: 'Share PDF (WhatsApp, email…)', run: function () { shareLibraryFile(name); } },
+      { icon: 'file-down', label: 'Save a copy to Downloads', run: function () { libraryToDownloads(name); } },
+      { icon: 'image', label: 'Save pages as JPG images', run: function () { saveScanImages(name, images); } },
+      { icon: 'camera', label: 'Scan another document', run: scan }
+    ]);
+  }
+
+  // The scanner's own page images (better than re-rendering the PDF).
+  function saveScanImages(name, images) {
+    var stem = name.replace(/\.pdf$/i, '');
+    if (!images.length) { Library.read(name).then(function (b) { exportJpegs(b, name); }); return; }
+    busy('Saving pages as JPG…');
+    var chain = Promise.resolve(), saved = 0;
+    images.forEach(function (uri, k) {
+      chain = chain.then(function () {
+        return FS.copy({ from: uri, to: 'Pictures/READORA/' + stem + '/' + stem + ' - page ' + (k + 1) + '.jpg', toDirectory: EXT }).then(function () { saved++; });
+      });
+    });
+    chain.then(function () {
+      idle();
+      toast(saved + (saved === 1 ? ' page' : ' pages') + ' saved in Pictures › READORA › ' + stem, 3600);
+    }, function () {
+      idle();
+      Library.read(name).then(function (b) { exportJpegs(b, name); });
+    });
+  }
+
+  // ---------------------------------------------------------------- PDF viewer
+  var PDFJS_BASE = new URL('./lib/pdfjs/', location.href).href;
+  function openPdf(bytes, password) {
+    return window.pdfjsLib.getDocument({
+      data: bytes.slice(0),     // pdf.js takes the buffer over; keep ours
+      password: password,
+      cMapUrl: PDFJS_BASE + 'cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: PDFJS_BASE + 'standard_fonts/',
+      wasmUrl: PDFJS_BASE + 'wasm/',
+      iccUrl: PDFJS_BASE + 'iccs/',
+      isEvalSupported: false,
+      enableXfa: true
+    }).promise;
+  }
+  // Free a document and its worker resources (pdf.js 6 does it through the loading task).
+  function destroyPdf(pdf) {
+    if (!pdf) return;
+    try {
+      if (pdf.loadingTask && pdf.loadingTask.destroy) pdf.loadingTask.destroy();
+      else if (pdf.destroy) pdf.destroy();
+    } catch (e) {}
+  }
+  function whenPdfjs() {
+    return window.pdfjsLib ? Promise.resolve() : new Promise(function (r) { window.addEventListener('pdfjs-ready', r, { once: true }); });
+  }
+
+  // The open document: {name, libName (if in the library), bytes, pdf, pages: [{w, h, el, canvas, task, rendered}]}
+  var current = null;
+  var zoom = 1;                 // 1 = page width fits the screen
+  var MAX_ZOOM = 5, MIN_ZOOM = 0.5;
+  var dpr = Math.min(window.devicePixelRatio || 1, 3);
+
+  function openLibraryFile(name) {
+    showLoading(true);
+    Library.read(name).then(function (bytes) {
+      return openBytes(bytes, name, name);
+    }).catch(function (e) {
+      showLoading(false);
+      toast('Couldn’t open ' + name + ': ' + errText(e), 3600);
+    });
+  }
+
+  function openBytes(bytes, name, libName) {
+    return whenPdfjs().then(function () {
+      return openWithPassword(bytes, undefined);
+    }).then(function (pdf) {
+      if (current) closeDoc();
+      current = { name: safeName(name), libName: libName || null, bytes: bytes, pdf: pdf, pages: [], text: [] };
+      $('vtitle').textContent = current.name.replace(/\.pdf$/i, '');
+      show('viewer');
+      return layoutDoc(pdf);
+    }).then(function () {
+      showLoading(false);
+    }, function (e) {
+      showLoading(false);
+      if (e && e.name === 'PasswordCancelled') return;
+      toast('This PDF couldn’t be opened: ' + errText(e), 3600);
+    });
+  }
+
+  function openWithPassword(bytes, password) {
+    return openPdf(bytes, password).catch(function (e) {
+      if (!e || e.name !== 'PasswordException') throw e;
+      showLoading(false);
+      return dialog({ title: 'Password', text: password ? 'Wrong password. Try again.' : 'This PDF is protected.', input: '', ok: 'Open' }).then(function (pw) {
+        if (pw === null) { var c = new Error('cancelled'); c.name = 'PasswordCancelled'; throw c; }
+        showLoading(true);
+        return openWithPassword(bytes, pw);
+      });
+    });
+  }
+
+  function showLoading(on) { $('loading').className = on ? 'on' : ''; }
+
+  function layoutDoc(pdf) {
+    var box = $('pages');
+    box.innerHTML = '';
+    zoom = 1;
+    $('scroller').scrollTop = 0;
+    $('scroller').scrollLeft = 0;
+    // Page sizes first (page 1's for any page that fails), so the whole document scrolls at once.
+    var sizes = [];
+    var chain = Promise.resolve();
+    var count = pdf.numPages;
+    for (var n = 1; n <= count; n++) {
+      (function (num) {
+        chain = chain.then(function () {
+          if (num > 1 && count > 300 && sizes[0]) { sizes.push(sizes[0]); return null; }   // long books: assume page 1's size
+          return pdf.getPage(num).then(function (p) {
+            var v = p.getViewport({ scale: 1 });
+            sizes.push({ w: v.width, h: v.height });
+          }, function () { sizes.push(sizes[0] || { w: 595, h: 842 }); });
+        });
+      })(n);
+    }
+    return chain.then(function () {
+      current.pages = sizes.map(function (s, k) {
+        var el = document.createElement('div');
+        el.className = 'page';
+        el.innerHTML = '<div class="num">' + (k + 1) + '</div>';
+        box.appendChild(el);
+        return { w: s.w, h: s.h, el: el, canvas: null, task: null, rendered: 0 };
+      });
+      applyZoom();
+      updateVisible();
+    });
+  }
+
+  function pageWidth() { return Math.max(200, $('scroller').clientWidth - 16) * zoom; }
+
+  function applyZoom() {
+    if (!current) return;
+    var w = pageWidth();
+    current.pages.forEach(function (p) {
+      p.el.style.width = Math.round(w) + 'px';
+      p.el.style.height = Math.round(w * p.h / p.w) + 'px';
+    });
+    $('pages').style.width = zoom > 1 ? Math.round(w + 16) + 'px' : '';
+    drawHighlights();
+  }
+
+  // Pages near the screen are drawn; pages far away give their canvas back (memory).
+  var visTimer = null;
+  function updateVisible() {
+    if (!current) return;
+    var sc = $('scroller');
+    var top = sc.scrollTop, bottom = top + sc.clientHeight;
+    var margin = sc.clientHeight * 1.2;
+    var first = -1;
+    current.pages.forEach(function (p, k) {
+      var y = p.el.offsetTop, h = p.el.offsetHeight;
+      var near = y + h > top - margin && y < bottom + margin;
+      if (first < 0 && y + h > top + 60) first = k;
+      if (near) renderPage(k);
+      else if (Math.abs(y - top) > margin * 4) releasePage(p);
+    });
+    var pill = $('pagepill');
+    pill.textContent = (first + 1) + ' / ' + current.pages.length;
+    pill.className = '';
+    clearTimeout(visTimer);
+    visTimer = setTimeout(function () { pill.className = 'hide'; }, 1400);
+    current.pageInView = first;
+  }
+
+  function releasePage(p) {
+    if (p.task) { try { p.task.cancel(); } catch (e) {} p.task = null; }
+    if (p.canvas) { p.canvas.width = p.canvas.height = 0; p.canvas.remove(); p.canvas = null; }
+    p.rendered = 0;
+  }
+
+  function renderPage(k) {
+    var p = current.pages[k];
+    var cssW = p.el.offsetWidth;
+    // Canvas pixels: the page's on-screen size times the screen density, within what a phone's
+    // WebView can hold (about 12 million pixels per canvas).
+    var scale = cssW * dpr / p.w;
+    var maxPixels = 12e6;
+    if (p.w * p.h * scale * scale > maxPixels) scale = Math.sqrt(maxPixels / (p.w * p.h));
+    if (p.rendered && Math.abs(p.rendered - scale) / scale < 0.15) return;
+    if (p.task) return;
+    var doc = current;
+    p.task = { cancel: function () {} };
+    doc.pdf.getPage(k + 1).then(function (page) {
+      if (doc !== current || !p.task) return null;
+      var v = page.getViewport({ scale: scale });
+      var c = document.createElement('canvas');
+      c.width = Math.ceil(v.width);
+      c.height = Math.ceil(v.height);
+      var ctx = c.getContext('2d', { alpha: false });
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, c.width, c.height);
+      var task = page.render({ canvasContext: ctx, viewport: v });
+      p.task = task;
+      return task.promise.then(function () {
+        if (doc !== current) return;
+        if (p.canvas) { p.canvas.width = p.canvas.height = 0; p.canvas.remove(); }
+        p.el.appendChild(c);
+        p.canvas = c;
+        p.rendered = scale;
+        p.task = null;
+        drawHighlights();
+      });
+    }).catch(function () { p.task = null; });
+  }
+
+  var scrollRaf = 0;
+  $('scroller').addEventListener('scroll', function () {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(function () { scrollRaf = 0; updateVisible(); });
+  }, { passive: true });
+  window.addEventListener('resize', function () {
+    if (!current) return;
+    var page = current.pageInView || 0;
+    applyZoom();
+    goToPage(page + 1, true);
+    updateVisible();
+  });
+
+  function goToPage(n, instant) {
+    if (!current) return;
+    n = Math.max(1, Math.min(current.pages.length, n | 0));
+    var el = current.pages[n - 1].el;
+    $('scroller').scrollTop = el.offsetTop - 8;
+    if (!instant) updateVisible();
+  }
+
+  // Pinch to zoom: the pages scale live under the fingers, then are drawn again sharp at the new
+  // size, keeping the point between the fingers in place. Double-tap: fit width / 2.5×.
+  (function () {
+    var sc = $('scroller'), box = $('pages');
+    var startDist = 0, startZoom = 1, cx = 0, cy = 0, live = 1, pinching = false;
+    var lastTap = 0, tapX = 0, tapY = 0, moved = false;
+    function dist(t) { var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY; return Math.sqrt(dx * dx + dy * dy); }
+    sc.addEventListener('touchstart', function (e) {
+      if (e.touches.length === 2) {
+        pinching = true;
+        startDist = dist(e.touches);
+        startZoom = zoom;
+        var r = sc.getBoundingClientRect();
+        cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+        cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+        box.style.transformOrigin = (sc.scrollLeft + cx) + 'px ' + (sc.scrollTop + cy) + 'px';
+        live = 1;
+      } else if (e.touches.length === 1) {
+        moved = false; tapX = e.touches[0].clientX; tapY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+    sc.addEventListener('touchmove', function (e) {
+      if (pinching && e.touches.length === 2) {
+        e.preventDefault();
+        live = Math.max(MIN_ZOOM / startZoom, Math.min(MAX_ZOOM / startZoom, dist(e.touches) / startDist));
+        box.style.transform = 'scale(' + live + ')';
+      } else if (e.touches.length === 1) {
+        if (Math.abs(e.touches[0].clientX - tapX) + Math.abs(e.touches[0].clientY - tapY) > 12) moved = true;
+      }
+    }, { passive: false });
+    function endPinch() {
+      if (!pinching) return;
+      pinching = false;
+      box.style.transform = '';
+      setZoom(startZoom * live, cx, cy);
+    }
+    sc.addEventListener('touchend', function (e) {
+      if (pinching && e.touches.length < 2) { endPinch(); return; }
+      if (e.touches.length === 0 && !moved && e.changedTouches.length === 1) {
+        var now = Date.now();
+        if (now - lastTap < 300) {
+          var r = sc.getBoundingClientRect();
+          setZoom(zoom > 1.2 ? 1 : 2.5, tapX - r.left, tapY - r.top);
+          lastTap = 0;
+        } else lastTap = now;
+      }
+    }, { passive: true });
+    sc.addEventListener('touchcancel', endPinch, { passive: true });
+  })();
+
+  // Zoom to `z`, keeping the screen point (px, py) over the same spot of the page.
+  function setZoom(z, px, py) {
+    if (!current) return;
+    z = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    var sc = $('scroller');
+    var oldW = pageWidth();
+    var docX = (sc.scrollLeft + px) - Math.max(0, (sc.clientWidth - (oldW + 16)) / 2);
+    var docY = sc.scrollTop + py;
+    var ratio = z / zoom;
+    zoom = z;
+    applyZoom();
+    var newW = pageWidth();
+    var offset = Math.max(0, (sc.clientWidth - (newW + 16)) / 2);
+    sc.scrollLeft = docX * ratio + offset - px;
+    sc.scrollTop = (docY - 12) * ratio + 12 - py;
+    updateVisible();
+  }
+
+  function closeDoc() {
+    if (!current) return;
+    current.pages.forEach(releasePage);
+    destroyPdf(current.pdf);
+    current = null;
+    $('pages').innerHTML = '';
+  }
+  function closeViewer() {
+    closeSearch();
+    closeDoc();
+    show('home');
+    renderLibrary();
+  }
+
+  // ---------------------------------------------------------------- search
+  var hits = [], hitIndex = -1;
+  function pageText(k) {
+    if (current.text[k]) return Promise.resolve(current.text[k]);
+    return current.pdf.getPage(k + 1).then(function (page) {
+      return page.getTextContent().then(function (tc) {
+        var items = tc.items.filter(function (it) { return typeof it.str === 'string'; });
+        current.text[k] = { items: items, view: page.getViewport({ scale: 1 }) };
+        return current.text[k];
+      });
+    });
+  }
+  function runSearch(query) {
+    hits = []; hitIndex = -1;
+    drawHighlights();
+    var q = query.trim().toLowerCase();
+    if (!q || !current) { $('searchcount').textContent = ''; return; }
+    var doc = current, n = doc.pages.length, k = 0;
+    $('searchcount').textContent = '…';
+    function next() {
+      if (doc !== current) return;
+      if (k >= n) { $('searchcount').textContent = hits.length ? (hitIndex + 1) + '/' + hits.length : '0'; if (!hits.length) toast('Not found'); return; }
+      var page = k++;
+      pageText(page).then(function (t) {
+        t.items.forEach(function (it, idx) {
+          if (it.str.toLowerCase().indexOf(q) >= 0) hits.push({ page: page, item: idx });
+        });
+        if (hits.length && hitIndex < 0) { hitIndex = 0; showHit(); }
+        next();
+      }, next);
+    }
+    next();
+  }
+  function showHit() {
+    if (hitIndex < 0 || !hits.length) return;
+    var h = hits[hitIndex];
+    var p = current.pages[h.page];
+    var t = current.text[h.page];
+    var it = t.items[h.item];
+    var s = p.el.offsetWidth / p.w;
+    var y = (t.view.height - it.transform[5]) * s;   // pdf.js text y is the baseline, from the bottom
+    var sc = $('scroller');
+    sc.scrollTop = Math.max(0, p.el.offsetTop + y - sc.clientHeight / 3);
+    $('searchcount').textContent = (hitIndex + 1) + '/' + hits.length;
+    drawHighlights();
+  }
+  function drawHighlights() {
+    var old = document.querySelectorAll('.hl');
+    for (var k = 0; k < old.length; k++) old[k].remove();
+    if (!current || !hits.length) return;
+    hits.forEach(function (h, idx) {
+      var p = current.pages[h.page], t = current.text[h.page];
+      if (!t || Math.abs(h.page - (current.pageInView || 0)) > 3) return;
+      var it = t.items[h.item];
+      var a = t.view.convertToViewportPoint(it.transform[4], it.transform[5] - it.height * 0.25);
+      var b = t.view.convertToViewportPoint(it.transform[4] + it.width, it.transform[5] + it.height * 0.95);
+      var rect = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+      var s = p.el.offsetWidth / p.w;
+      var d = document.createElement('div');
+      d.className = 'hl' + (idx === hitIndex ? ' current' : '');
+      d.style.left = rect[0] * s + 'px';
+      d.style.top = rect[1] * s + 'px';
+      d.style.width = Math.max(4, (rect[2] - rect[0]) * s) + 'px';
+      d.style.height = Math.max(6, (rect[3] - rect[1]) * s) + 'px';
+      p.el.appendChild(d);
+    });
+  }
+  var searchTimer = null;
+  function openSearch() { $('searchbar').className = 'open'; $('btnSearch').className = 'iconbtn on'; setTimeout(function () { $('q').focus(); }, 50); }
+  function closeSearch() { $('searchbar').className = ''; $('btnSearch').className = 'iconbtn'; $('q').value = ''; hits = []; hitIndex = -1; drawHighlights(); $('searchcount').textContent = ''; }
+  $('btnSearch').addEventListener('click', function () { if ($('searchbar').className) closeSearch(); else openSearch(); });
+  $('btnCloseSearch').addEventListener('click', closeSearch);
+  $('q').addEventListener('input', function () { var v = this.value; clearTimeout(searchTimer); searchTimer = setTimeout(function () { runSearch(v); }, 350); });
+  $('q').addEventListener('keydown', function (e) { if (e.key === 'Enter') { this.blur(); if (hits.length) { hitIndex = (hitIndex + 1) % hits.length; showHit(); } } });
+  $('btnNext').addEventListener('click', function () { if (hits.length) { hitIndex = (hitIndex + 1) % hits.length; showHit(); } });
+  $('btnPrev').addEventListener('click', function () { if (hits.length) { hitIndex = (hitIndex - 1 + hits.length) % hits.length; showHit(); } });
+
+  // ---------------------------------------------------------------- viewer menu
+  $('btnBack').addEventListener('click', closeViewer);
+  $('btnNight').addEventListener('click', function () {
+    var on = document.body.classList.toggle('night');
+    this.className = 'iconbtn' + (on ? ' on' : '');
+    try { localStorage.setItem('readora.night', on ? '1' : '0'); } catch (e) {}
+  });
+  $('btnVMore').addEventListener('click', function () {
+    if (!current) return;
+    var doc = current;
+    var actions = [
+      { icon: 'share-2', label: 'Share PDF', run: function () { if (doc.libName) shareLibraryFile(doc.libName); else shareBytes(doc.name, doc.bytes); } },
+      { icon: 'file-down', label: 'Save a copy to Downloads', run: function () { if (doc.libName) libraryToDownloads(doc.libName); else bytesToDownloads(doc.name, doc.bytes); } },
+      { icon: 'image', label: 'Save pages as JPG images', run: function () { exportJpegs(doc.bytes, doc.name); } },
+      { icon: 'hash', label: 'Go to page…', run: function () {
+        dialog({ title: 'Go to page', text: '1 to ' + doc.pages.length, input: String((doc.pageInView || 0) + 1), type: 'number', ok: 'Go' }).then(function (v) { if (v) goToPage(parseInt(v, 10)); });
+      } }
+    ];
+    if (!doc.libName) {
+      actions.unshift({ icon: 'plus', label: 'Save to My PDFs', run: function () {
+        Library.saveBytes(doc.name, doc.bytes).then(function (n) { doc.libName = n; renderLibrary(); toast('Saved in Documents › READORA'); }, function (e) { toast('Couldn’t save: ' + errText(e)); });
+      } });
+    } else {
+      actions.push({ icon: 'pencil', label: 'Rename', run: function () { renameFile(doc.libName); } });
+    }
+    sheet(doc.name.replace(/\.pdf$/i, ''), doc.pages.length + (doc.pages.length === 1 ? ' page' : ' pages') + ' · ' + sizeText(doc.bytes.length), actions);
+  });
+
+  // ---------------------------------------------------------------- opening files
+  $('btnScan').addEventListener('click', scan);
+  $('btnOpen').addEventListener('click', function () { $('picker').value = ''; $('picker').click(); });
+  $('picker').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    showLoading(true);
+    show('viewer');
+    f.arrayBuffer().then(function (buf) { return openBytes(new Uint8Array(buf), f.name, null); }, function (e) {
+      showLoading(false); show('home'); toast('Couldn’t read the file: ' + errText(e));
+    });
+  });
+
+  // "Open with READORA" from another app: a content:// (or file://) address.
+  function openExternal(url) {
+    if (!url || !/^(content|file):/i.test(url)) return;
+    showLoading(true);
+    show('viewer');
+    var name = 'Document.pdf';
+    try {
+      var last = decodeURIComponent(url.split('?')[0].split('/').pop() || '');
+      if (/\.pdf$/i.test(last)) name = last.split(':').pop();
+    } catch (e) {}
+    var stat = FS && FS.stat ? FS.stat({ path: url }).then(function (s) { if (s && s.name && /\.pdf$/i.test(s.name)) name = s.name; }, function () {}) : Promise.resolve();
+    stat.then(function () { return readUri(url); }).then(function (bytes) {
+      return openBytes(bytes, name, null);
+    }).catch(function (e) {
+      showLoading(false); show('home');
+      toast('Couldn’t open the file: ' + errText(e), 3600);
+    });
+  }
+
+  // ---------------------------------------------------------------- back button and start
+  function onBack() {
+    if (overlay === 'dialog') { if (dialog.cancel) dialog.cancel(); else closeOverlay(); return; }
+    if (overlay === 'sheet') { closeOverlay(); return; }
+    if ($('busy').className === 'on') return;
+    if ($('searchbar').className) { closeSearch(); return; }
+    if ($('viewer').className.indexOf('active') >= 0) { closeViewer(); return; }
+    if (AppP && AppP.minimizeApp) AppP.minimizeApp(); else if (AppP) AppP.exitApp();
+  }
+
+  function start() {
+    fillIcons();
+    try { if (localStorage.getItem('readora.night') === '1') { document.body.classList.add('night'); $('btnNight').className = 'iconbtn on'; } } catch (e) {}
+    Library.ready().then(renderLibrary);
+    whenPdfjs().then(runThumbs);
+    if (AppP) {
+      AppP.addListener('backButton', onBack);
+      AppP.addListener('appUrlOpen', function (ev) { openExternal(ev && ev.url); });
+      // The scanner can outlive the app on low memory: its result comes back here.
+      AppP.addListener('appRestoredResult', function (ev) {
+        if (!ev || ev.pluginId !== 'DocumentScanner') return;
+        if (ev.success) scanned(ev.data); else toast('The scan stopped: ' + errText(ev.error));
+      });
+      if (AppP.getLaunchUrl) AppP.getLaunchUrl().then(function (r) { if (r && r.url) openExternal(r.url); }).catch(function () {});
+    }
+  }
+
+  // For testing in a browser: open a PDF from a URL (?open=...).
+  window.READORA = { openBytes: openBytes, setZoom: setZoom, goToPage: goToPage, runSearch: runSearch, library: Library, render: renderLibrary, scanned: scanned };
+  start();
+})();
+</script>
+</body>
+</html>

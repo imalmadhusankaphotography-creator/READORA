@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">READORA</string>
+    <string name="title_activity_main">READORA</string>
+    <string name="package_name">lk.imalmadhusanka.readora</string>
+    <string name="custom_url_scheme">lk.imalmadhusanka.readora</string>
+</resources>

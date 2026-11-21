@@ -34,6 +34,23 @@ The files are not code-signed, so the first time Windows may say it protected yo
 - හැම PDF එකක්ම READORA එකෙන් open වෙන්න: PDF එකක් right-click › **Open with** › **Choose another app** › **READORA** › **Always**.
 - අලුත් version එකක් ආවද බලන්න: app එකේ **Help › Check for updates**.
 
+## READORA for Android
+
+The phone version (`mobile/`) scans paper to PDF with the camera and reads PDFs. Get the newest
+`READORA-1.0.x.apk` from the [Releases page](https://github.com/imalmadhusankaphotography-creator/READORA/releases)
+(the `android-v1.0.x` releases) and open it on the phone to install.
+
+- **Scan**: Google's ML Kit document scanner: finds the page edges by itself, crops and straightens,
+  filters, removes stains and fingers, many pages into one PDF; photos from the gallery work too.
+- Scans are saved in the phone's **Documents › READORA** folder. Share them (WhatsApp, email), save a
+  copy to **Downloads**, or save the pages as **JPG** images.
+- **Read**: open any PDF (or "Open with › READORA" from a file manager): smooth scrolling, pinch
+  zoom, double-tap zoom, search, night mode, go to page, password-protected PDFs.
+
+It is a Capacitor app (one `www/index.html`, pdf.js for the pages) built by
+`.github/workflows/readora-android.yml` and signed with the fixed key in `mobile/android` so every
+new APK installs over the last one.
+
 ## What it does
 
 - **Reads beautifully.** Sharp text at any zoom (large pages render in tiles), complex scripts,

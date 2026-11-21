@@ -1,0 +1,73 @@
+name: READORA for Android
+
+# Every push to main that changes mobile/ builds the READORA APK (signed with the app's fixed key,
+# so each new APK installs over the last) and puts it on the Releases page as android-v1.0.<run>.
+# Those releases are never marked "latest": the Windows app's updater reads the latest release.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/readora-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: readora-android-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 1.0.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: Install packages
+        run: npm ci --no-audit --no-fund
+      - name: Copy pdf.js and the app into the Android project
+        run: |
+          npm run libs
+          npx cap sync android
+      - name: Build the APK
+        working-directory: mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon --stacktrace
+      - name: Check the APK
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/release/app-release.apk "dist/READORA-$VERSION_NAME.apk"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$BT/apksigner" verify --print-certs "dist/READORA-$VERSION_NAME.apk" | head -3
+          "$BT/aapt" dump badging "dist/READORA-$VERSION_NAME.apk" | grep -E "^package|^application-label|sdkVersion"
+          unzip -l "dist/READORA-$VERSION_NAME.apk" | grep -E "assets/public/(index.html|lib/pdfjs/pdf.min.mjs)"
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: READORA-android-apk
+          path: mobile/dist/*.apk
+      - name: Publish on the Releases page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="android-v$VERSION_NAME"
+          gh release create "$TAG" dist/*.apk --target "$GITHUB_SHA" --title "READORA for Android $VERSION_NAME" --notes-file RELEASE-NOTES.md --latest=false
+          echo "::notice title=Released::$TAG https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG"

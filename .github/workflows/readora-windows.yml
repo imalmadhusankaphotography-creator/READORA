@@ -6,6 +6,10 @@ name: READORA for Windows
 on:
   push:
     branches: [main]
+    # The Android app (mobile/) has its own workflow.
+    paths-ignore:
+      - "mobile/**"
+      - ".github/workflows/readora-android.yml"
   workflow_dispatch:
 
 permissions:
