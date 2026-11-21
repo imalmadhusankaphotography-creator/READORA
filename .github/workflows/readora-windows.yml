@@ -1,0 +1,91 @@
+name: READORA for Windows
+
+# Every push to main builds READORA for Windows x64, starts it once with a sample PDF to check that
+# its window comes up (and takes screenshots), and puts the installer and the portable zip on the
+# Releases page (release v<version>; the run's Artifacts have them too).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: readora-windows-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 180
+    env:
+      PDFCRAFT_BUILD_SHA: ${{ github.sha }}
+      CARGO_INCREMENTAL: "0"
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: readora-windows
+          cache-on-failure: true
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g "WixToolset.UI.wixext/5.0.2" "WixToolset.Util.wixext/5.0.2"
+      # ci-run.ps1 turns a failure's compiler errors into an annotation on the run
+      - name: Build
+        shell: pwsh
+        run: pwsh packaging/readora/ci-run.ps1 -Title Build -Command "pwsh -NoProfile -File packaging\readora\package.ps1 -BuildOnly"
+      - name: Package
+        shell: pwsh
+        run: pwsh packaging/readora/ci-run.ps1 -Title Package -Command "pwsh -NoProfile -File packaging\readora\package.ps1 -SkipBuild"
+      - name: Find the packages
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem dist\readora-*-portable.zip | Select-Object -First 1
+          $msi = Get-ChildItem dist\readora-*.msi | Select-Object -First 1
+          "ZIP=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "MSI=$($msi.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - uses: actions/upload-artifact@v4
+        with:
+          name: READORA-windows-x64-portable
+          path: ${{ env.ZIP }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: READORA-windows-x64-installer
+          path: ${{ env.MSI }}
+      # Start the packaged app like a user, with a sample PDF, and report whether its window comes
+      # up (with its log) as an annotation; screenshots go to the run's Artifacts.
+      - name: Smoke test READORA
+        shell: pwsh
+        run: pwsh packaging/readora/smoke-test.ps1 -Zip "$env:ZIP" -Shots screenshots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: READORA-screenshots
+          path: screenshots
+          if-no-files-found: ignore
+      # The Releases page always has the latest build: a push to main whose version has no release
+      # yet creates it (tag v<version> on this commit); later pushes move the tag here and replace
+      # the files. GITHUB_TOKEN's tag doesn't start another run.
+      - name: Publish on the Releases page
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          $tag = "v$v"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag "$env:MSI" "$env:ZIP" --target "$env:GITHUB_SHA" --title "READORA $v" --notes-file packaging/readora/RELEASE-NOTES.md --latest
+          } else {
+            gh api -X PATCH "repos/$env:GITHUB_REPOSITORY/git/refs/tags/$tag" -f sha="$env:GITHUB_SHA" -F force=true | Out-Null
+            gh release edit $tag --title "READORA $v" --notes-file packaging/readora/RELEASE-NOTES.md
+            gh release upload $tag "$env:MSI" "$env:ZIP" --clobber
+          }
+          if ($LASTEXITCODE -ne 0) { throw "publishing $tag failed" }
+          Write-Output "::notice title=Released::$tag https://github.com/$env:GITHUB_REPOSITORY/releases/tag/$tag"

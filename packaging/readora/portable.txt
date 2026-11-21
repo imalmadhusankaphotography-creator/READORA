@@ -1,0 +1,47 @@
+READORA portable mode
+
+While this file sits next to readora.exe, READORA keeps its settings, log files, crash-recovery
+autosaves and new digital IDs in the READORAData folder beside it, and writes nothing to
+%APPDATA% or %LOCALAPPDATA%. Copy the whole folder to move READORA with its settings.
+
+Delete this file to use the normal per-user folders (%APPDATA%\READORA and
+%LOCALAPPDATA%\READORA) instead. If READORAData can't be written (for example on a read-only
+drive), READORA says so and uses the per-user folders instead.
+
+Opening PDF files with this copy
+
+The portable copy doesn't register itself with Windows, so picking it under "Open with" may not
+stick. To offer it in Settings > Apps > Default apps, open PowerShell in this folder and run:
+
+  $exe = (Resolve-Path .\readora.exe).Path
+  $c = "HKCU:\Software\Classes"
+  $cap = "HKCU:\Software\READORA.Portable\Capabilities"
+  foreach ($k in "$c\READORA.Portable\shell\open\command", "$c\.pdf\OpenWithProgids",
+                 "$cap\FileAssociations", "HKCU:\Software\RegisteredApplications") {
+    if (!(Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+  }
+  Set-Item -Path "$c\READORA.Portable" -Value "PDF Document"
+  Set-Item -Path "$c\READORA.Portable\shell\open\command" -Value "`"$exe`" `"%1`""
+  New-ItemProperty -Path "$c\.pdf\OpenWithProgids" -Name READORA.Portable -Value "" -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path $cap -Name ApplicationName -Value "READORA (portable)" -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path $cap -Name ApplicationDescription -Value "A smooth PDF reader" -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path "$cap\FileAssociations" -Name .pdf -Value READORA.Portable -PropertyType String -Force | Out-Null
+  New-ItemProperty -Path "HKCU:\Software\RegisteredApplications" -Name "READORA (portable)" -Value "Software\READORA.Portable\Capabilities" -PropertyType String -Force | Out-Null
+
+Then open Settings > Apps > Default apps, search for .pdf (or for READORA) and choose it. This
+changes only your own user's settings (HKEY_CURRENT_USER), and it doesn't change the default app by
+itself. If you move or rename this folder, run it again from the new place.
+
+To undo, first choose another app for .pdf in Settings > Apps > Default apps (otherwise Windows
+keeps pointing PDF files at the removed entry), then run:
+
+  Remove-Item -Path "HKCU:\Software\Classes\READORA.Portable", "HKCU:\Software\READORA.Portable" -Recurse -ErrorAction SilentlyContinue
+  Remove-ItemProperty -Path "HKCU:\Software\Classes\.pdf\OpenWithProgids" -Name READORA.Portable -ErrorAction SilentlyContinue
+  Remove-ItemProperty -Path "HKCU:\Software\RegisteredApplications" -Name "READORA (portable)" -ErrorAction SilentlyContinue
+  foreach ($k in "HKCU:\Software\Classes\.pdf\OpenWithProgids", "HKCU:\Software\Classes\.pdf") {
+    $i = Get-Item -Path $k -ErrorAction SilentlyContinue
+    if ($i -and $i.ValueCount -eq 0 -and $i.SubKeyCount -eq 0) { Remove-Item -Path $k }
+  }
+
+The last lines delete the .pdf keys only when nothing else is left in them, so another app's entry
+there stays.

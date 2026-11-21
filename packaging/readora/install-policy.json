@@ -1,0 +1,329 @@
+{
+  "id": "readora",
+  "name": "READORA",
+  "upgradeCode": "12139770-8B9E-45DC-A75E-18B7C934FB30",
+  "sources": [
+    "readora.wxs",
+    "installer-ui.wxs"
+  ],
+  "icon": "assets/app-icon/readora.ico",
+  "localization": [],
+  "extensions": [],
+  "payloads": [
+    "LICENSE-APACHE",
+    "LICENSE-MIT",
+    "LICENSE-document.txt",
+    "NOTICE",
+    "readora-cli.exe",
+    "readora.exe"
+  ],
+  "registry": [
+    [
+      "-1",
+      "Software\\Microsoft\\Windows\\CurrentVersion\\App Paths\\readora.exe",
+      "",
+      "[#ReadoraExe]"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\READORA.Document",
+      "",
+      "PDF Document"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\READORA.Document\\DefaultIcon",
+      "",
+      "\"[#ReadoraExe]\",-2"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\READORA.Document\\shell\\open\\command",
+      "",
+      "\"[#ReadoraExe]\" \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\READORA.Document",
+      "TypeOverlay",
+      ""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\.pdf\\OpenWithProgids",
+      "READORA.Document",
+      ""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\Applications\\readora.exe",
+      "FriendlyAppName",
+      "READORA"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\Applications\\readora.exe\\DefaultIcon",
+      "",
+      "\"[#ReadoraExe]\",-2"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\Applications\\readora.exe\\SupportedTypes",
+      ".pdf",
+      ""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\Applications\\readora.exe\\shell\\open\\command",
+      "",
+      "\"[#ReadoraExe]\" \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Capabilities",
+      "ApplicationName",
+      "READORA"
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Capabilities",
+      "ApplicationDescription",
+      "A smooth PDF reader"
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Capabilities",
+      "ApplicationIcon",
+      "[#ReadoraExe],0"
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Capabilities\\FileAssociations",
+      ".pdf",
+      "READORA.Document"
+    ],
+    [
+      "-1",
+      "Software\\RegisteredApplications",
+      "READORA",
+      "Software\\READORA\\Capabilities"
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Shortcuts",
+      "StartMenu",
+      "#1"
+    ],
+    [
+      "-1",
+      "Software\\READORA\\Shortcuts",
+      "Desktop",
+      "#1"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\READORA.Edit",
+      "",
+      "Open with READORA"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\READORA.Edit",
+      "Icon",
+      "\"[#ReadoraExe]\",0"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\READORA.Edit",
+      "MultiSelectModel",
+      "Document"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.pdf\\shell\\READORA.Edit\\command",
+      "",
+      "\"[#ReadoraExe]\" \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.png\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpg\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpeg\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tif\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.tiff\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.gif\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.bmp\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jp2\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.j2k\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\READORA.CreatePdf",
+      "",
+      "Create PDF with READORA\u2026"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\READORA.CreatePdf",
+      "MultiSelectModel",
+      "Single"
+    ],
+    [
+      "-1",
+      "Software\\Classes\\SystemFileAssociations\\.jpx\\shell\\READORA.CreatePdf\\command",
+      "",
+      "\"[#ReadoraExe]\" --create-images \"%1\""
+    ]
+  ],
+  "mode": "dualScope"
+}

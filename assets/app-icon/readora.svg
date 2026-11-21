@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- READORA temporary app icon: a page with a folded corner and an R, on a warm red tile.
+       Placeholder until Imal's own logo replaces it (packaging/readora/make_logo_assets.py). -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7a45"/>
+      <stop offset="1" stop-color="#c8103c"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e2343f"/>
+      <stop offset="1" stop-color="#b30d36"/>
+    </linearGradient>
+    <clipPath id="clip"><rect width="512" height="512" rx="112"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="512" height="512" fill="url(#tile)"/>
+    <!-- soft shadow under the page -->
+    <path d="M168,116 H324 L396,188 V408 Q396,436 368,436 H168 Q140,436 140,408 V144 Q140,116 168,116 Z" fill="#7a0022" opacity="0.28"/>
+    <!-- the page -->
+    <path d="M156,96 H312 L384,168 V388 Q384,416 356,416 H156 Q128,416 128,388 V124 Q128,96 156,96 Z" fill="#fff8f2"/>
+    <!-- folded corner -->
+    <path d="M312,96 V146 Q312,168 334,168 H384 Z" fill="#f4c9bd"/>
+    <!-- the R -->
+    <g transform="translate(-14,-6)" fill="none" stroke="url(#ink)">
+      <path d="M216,372 V190 H272 A52,52 0 0 1 272,294 H216" stroke-width="42" stroke-linejoin="round"/>
+      <path d="M262,290 L322,370" stroke-width="44" stroke-linecap="butt"/>
+    </g>
+    <circle cx="308" cy="364" r="22" fill="#b30d36"/>
+  </g>
+</svg>
