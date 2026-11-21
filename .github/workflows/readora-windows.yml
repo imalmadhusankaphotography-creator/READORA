@@ -46,7 +46,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: tesseract-bundle
-          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v1
+          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v2
       - name: Build Tesseract
         if: steps.tesseract.outputs.cache-hit != 'true'
         shell: pwsh
@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: tesseract-bundle
-          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v1
+          key: tesseract-vcpkg-static-tessdata_best-e12c65a-v2
       - name: Package
         shell: pwsh
         env:
@@ -89,6 +89,24 @@ jobs:
           name: READORA-screenshots
           path: screenshots
           if-no-files-found: ignore
+      # The screenshots also go to the `screenshots` branch (replaced each time), so they can be
+      # looked at without signing in to download the artifact.
+      - name: Put the screenshots on the screenshots branch
+        if: always() && github.event_name != 'pull_request'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          if (-not (Test-Path screenshots\*.png)) { exit 0 }
+          $wt = Join-Path $env:RUNNER_TEMP 'shots'
+          git worktree add --detach $wt
+          Push-Location $wt
+          git checkout --orphan screenshots
+          git rm -rfq .
+          Copy-Item "$env:GITHUB_WORKSPACE\screenshots\*.png" .
+          git add *.png
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -qm "Screenshots of $env:GITHUB_SHA"
+          git push -f origin screenshots
+          Pop-Location
       # The Releases page always has the latest build: a push to main whose version has no release
       # yet creates it (tag v<version> on this commit); later pushes move the tag here and replace
       # the files. GITHUB_TOKEN's tag doesn't start another run.

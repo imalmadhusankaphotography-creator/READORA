@@ -113,6 +113,14 @@ try {
     $report.Add("Sinhala OCR: $(if ($ocrOk) { 'read' } else { 'FAILED' }) ($sinhala Sinhala characters)")
     $tail = $ocr.Substring([Math]::Max(0, $ocr.Length - 1500))
     $report.Add($tail)
+    if (-not $ocrOk) {
+      # Tesseract on its own, on a picture of Sinhala text, to tell READORA's part from Tesseract's.
+      $tess = Join-Path $exe.DirectoryName 'tesseract\tesseract.exe'
+      $env:TESSDATA_PREFIX = Join-Path $exe.DirectoryName 'tesseract\tessdata'
+      $direct = (& $tess (Join-Path $Root 'packaging\readora\sample\sinhala-line.png') stdout -l sin+eng -c tessedit_create_tsv=1 2>&1) -join "`n"
+      $report.Add("Tesseract directly (TSV): " + $direct.Substring(0, [Math]::Min(1200, $direct.Length)))
+      Remove-Item Env:TESSDATA_PREFIX
+    }
     if (-not $ocrOk) { $ok = $false }
   } else {
     $report.Add('Sinhala OCR: no bundled tesseract in the package')

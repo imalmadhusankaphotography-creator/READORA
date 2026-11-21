@@ -528,8 +528,11 @@ impl Recognizer for TesseractCli {
             set_private(&mut f);
             f.write_all(&png).map_err(|e| OcrError::Process(format!("writing the image failed: {e}")))?;
         }
-        // Fixed argv, no shell: tesseract <png> stdout -l <lang> tsv.
-        let tsv = self.run(&[&png_path.to_string_lossy(), "stdout", "-l", lang, "tsv"], self.timeout, self.max_output)?;
+        // Fixed argv, no shell: tesseract <png> stdout -l <lang> -c tessedit_create_tsv=1. The
+        // variable rather than the `tsv` config name: that name is a file in tessdata/configs,
+        // which a copy with only the language data (READORA's own, many others) doesn't have,
+        // and without it Tesseract prints plain text, which reads as no words at all.
+        let tsv = self.run(&[&png_path.to_string_lossy(), "stdout", "-l", lang, "-c", "tessedit_create_tsv=1"], self.timeout, self.max_output)?;
         let (lines, truncated) = parse_tsv_bounded(&tsv);
         if truncated {
             return Err(OcrError::Recognize(format!("the {MAX_WORDS}-word limit was exceeded; the incomplete reading was rejected")));

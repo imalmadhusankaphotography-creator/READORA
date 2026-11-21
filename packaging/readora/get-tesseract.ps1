@@ -54,6 +54,17 @@ Copy-Item $exe $Out
 # Anything else vcpkg put beside the tool (a static build should have nothing; copied if it does).
 Get-ChildItem (Split-Path $exe) -Filter *.dll -ErrorAction SilentlyContinue | Copy-Item -Destination $Out
 
+# Tesseract's own config files (configs\tsv, tessconfigs\…, pdf.ttf), which vcpkg installs in
+# share\tessdata: output formats chosen by name (`tesseract in.png out tsv`) read them.
+$shared = Join-Path $installed 'share\tessdata'
+if (Test-Path $shared) {
+  Get-ChildItem $shared | Where-Object { $_.Name -notlike '*.traineddata' } | Copy-Item -Recurse -Destination $data -Force
+}
+if (-not (Test-Path (Join-Path $data 'configs\tsv'))) {
+  New-Item -ItemType Directory -Force -Path (Join-Path $data 'configs') | Out-Null
+  Set-Content -Encoding ascii -Path (Join-Path $data 'configs\tsv') -Value 'tessedit_create_tsv 1'
+}
+
 foreach ($lang in $Languages.Keys) {
   $file = Join-Path $data "$lang.traineddata"
   curl.exe -fsSL --retry 3 -o $file "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/$TessdataCommit/$lang.traineddata"
@@ -88,5 +99,12 @@ Invoke-Native 'tesseract --version' { & (Join-Path $Out 'tesseract.exe') --versi
 $langs = (& (Join-Path $Out 'tesseract.exe') --list-langs 2>&1) -join "`n"
 foreach ($lang in $Languages.Keys) {
   if ($langs -notmatch "(?m)^$lang\s*$") { throw "tesseract --list-langs doesn't list $lang`n$langs" }
+}
+# And it reads Sinhala.
+$line = Join-Path $PSScriptRoot 'sample\sinhala-line.png'
+if (Test-Path $line) {
+  $read = (& (Join-Path $Out 'tesseract.exe') $line stdout -l sin+eng 2>&1) -join "`n"
+  Write-Output "Sinhala test read: $read"
+  if ([regex]::Matches($read, '[\u0D80-\u0DFF]').Count -lt 20) { throw "tesseract read no Sinhala from $line`n$read" }
 }
 Get-ChildItem -Recurse $Out | Format-Table FullName, Length
